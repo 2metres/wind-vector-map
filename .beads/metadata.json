@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "wind_vector_map",
+  "project_id": "702a0b8d-c7b2-4d4b-a17f-8e0b2526f426"
+}
