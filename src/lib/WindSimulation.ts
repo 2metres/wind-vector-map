@@ -3,7 +3,8 @@ import arrowsFrag from '../shaders/arrows.frag?raw';
 import velocityUpdateVert from '../shaders/velocity-update.vert?raw';
 import velocityUpdateFrag from '../shaders/velocity-update.frag?raw';
 import diffuseFrag from '../shaders/diffuse.frag?raw';
-import { PathStore } from './PathStore';
+import motionDetectFrag from '../shaders/motion-detect.frag?raw';
+import { TriggerGrid } from './TriggerGrid';
 
 interface ShaderProgram {
   program: WebGLProgram;
@@ -19,6 +20,7 @@ export class WindSimulation {
   private arrowProgram!: ShaderProgram;
   private velocityProgram!: ShaderProgram;
   private diffuseProgram!: ShaderProgram;
+  private motionDetectProgram!: ShaderProgram;
 
   // Velocity field ping-pong textures
   private velocityFBOs: { fbo: WebGLFramebuffer; texture: WebGLTexture }[] = [];
@@ -48,10 +50,21 @@ export class WindSimulation {
   private audioHistoryTexture!: WebGLTexture;
   private audioActive = false;
 
-  // Path
-  private pathStore = new PathStore();
-  private pathMapTexture!: WebGLTexture;
-  private hasPath = false;
+  // Trigger grid
+  private triggerGrid = new TriggerGrid();
+  private triggerMapTexture!: WebGLTexture;
+  private hasTriggers = false;
+  private prevGridCol = -1;
+  private prevGridRow = -1;
+  private prevDirX = 0;
+  private prevDirY = 0;
+  private strokeHasDirection = false;
+
+  // Camera motion detection
+  private cameraTextures: WebGLTexture[] = [];
+  private currentCameraTexture = 0;
+  private motionVectorFBO!: { fbo: WebGLFramebuffer; texture: WebGLTexture };
+  private cameraActive = false;
 
   // Time
   private time = 0;
@@ -81,17 +94,22 @@ export class WindSimulation {
     const gl = this.gl;
 
     this.arrowProgram = this.createProgram(arrowsVert, arrowsFrag, {
-      uniforms: ['u_resolution', 'u_velocityField', 'u_pathMap', 'u_audioHistory', 'u_audioActive', 'u_hasPath', 'u_time', 'u_arrowScale', 'u_cellSize'],
+      uniforms: ['u_resolution', 'u_velocityField', 'u_triggerMap', 'u_audioHistory', 'u_audioActive', 'u_hasTriggers', 'u_maxSequenceIndex', 'u_time', 'u_arrowScale', 'u_cellSize'],
       attributes: ['a_position', 'a_vertex'],
     });
 
     this.velocityProgram = this.createProgram(velocityUpdateVert, velocityUpdateFrag, {
-      uniforms: ['u_prevVelocity', 'u_mousePos', 'u_mouseVel', 'u_mouseActive', 'u_decay', 'u_radius', 'u_dt'],
+      uniforms: ['u_prevVelocity', 'u_mousePos', 'u_mouseVel', 'u_mouseActive', 'u_decay', 'u_radius', 'u_dt', 'u_cameraMotion', 'u_cameraActive', 'u_cameraStrength'],
       attributes: ['a_position'],
     });
 
     this.diffuseProgram = this.createProgram(velocityUpdateVert, diffuseFrag, {
       uniforms: ['u_velocity', 'u_texelSize', 'u_diffusion'],
+      attributes: ['a_position'],
+    });
+
+    this.motionDetectProgram = this.createProgram(velocityUpdateVert, motionDetectFrag, {
+      uniforms: ['u_currentFrame', 'u_prevFrame'],
       attributes: ['a_position'],
     });
 
@@ -108,9 +126,9 @@ export class WindSimulation {
       this.velocityFBOs.push(this.createFBO(this.fieldSize, this.fieldSize, initData));
     }
 
-    // Path map texture
-    this.pathMapTexture = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, this.pathMapTexture);
+    // Trigger map texture
+    this.triggerMapTexture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, this.triggerMapTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.fieldSize, this.fieldSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -125,6 +143,21 @@ export class WindSimulation {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // Camera ping-pong textures (256x256 RGBA)
+    for (let i = 0; i < 2; i++) {
+      const tex = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.fieldSize, this.fieldSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this.cameraTextures.push(tex);
+    }
+
+    // Motion vector FBO (256x256 RGBA)
+    this.motionVectorFBO = this.createFBO(this.fieldSize, this.fieldSize);
 
     this.createArrowGeometry();
     this.createGridPositions();
@@ -238,12 +271,26 @@ export class WindSimulation {
       this.mouseVel[1] = (ny - this.lastMousePos[1]) / dt;
     }
 
-    // Record path point and live-bake the path map
-    const prevLen = this.pathStore.length;
-    this.pathStore.addPoint(nx, ny);
-    if (this.pathStore.length > prevLen && this.pathStore.length >= 3) {
-      this.liveBakePath();
+    // Arm trigger grid cells along the stroke
+    const col = Math.max(0, Math.min(255, Math.floor(nx * 256)));
+    const row = Math.max(0, Math.min(255, Math.floor(ny * 256)));
+    if (this.prevGridCol >= 0) {
+      const dx = col - this.prevGridCol;
+      const dy = row - this.prevGridRow;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (len > 0.5) {
+        this.prevDirX = dx / len;
+        this.prevDirY = dy / len;
+        this.strokeHasDirection = true;
+      }
+      if (this.strokeHasDirection) {
+        this.triggerGrid.armLine(this.prevGridCol, this.prevGridRow, col, row, this.prevDirX, this.prevDirY);
+        this.bakeTriggerMap();
+        this.hasTriggers = true;
+      }
     }
+    this.prevGridCol = col;
+    this.prevGridRow = row;
 
     this.mousePos[0] = nx;
     this.mousePos[1] = ny;
@@ -257,53 +304,30 @@ export class WindSimulation {
     this.mouseActive = false;
     this.mouseVel[0] = 0;
     this.mouseVel[1] = 0;
-    this.finalizePath();
   }
 
-  onMouseUp() {
-    this.finalizePath();
+  startNewStroke() {
+    this.prevGridCol = -1;
+    this.prevGridRow = -1;
+    this.strokeHasDirection = false;
   }
 
-  private finalizePath() {
-    if (this.pathStore.length < 3) return;
-    this.pathStore.finalize();
-    this.bakePath();
-    this.hasPath = true;
-  }
-
-  clearPath() {
-    this.pathStore.clear();
-    this.hasPath = false;
-    // Clear the path map texture
+  clearTriggers() {
+    this.triggerGrid.clear();
+    this.hasTriggers = false;
     const gl = this.gl;
     const emptyData = new Uint8Array(this.fieldSize * this.fieldSize * 4);
-    gl.bindTexture(gl.TEXTURE_2D, this.pathMapTexture);
+    gl.bindTexture(gl.TEXTURE_2D, this.triggerMapTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.fieldSize, this.fieldSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, emptyData);
+    this.prevGridCol = -1;
+    this.prevGridRow = -1;
+    this.strokeHasDirection = false;
   }
 
-  startNewPath() {
-    this.pathStore.clear();
-    this.hasPath = false;
-  }
-
-  private liveBakePath() {
-    // Temporarily normalize t values for baking, then restore
-    const points = this.pathStore.points;
-    const totalT = points[points.length - 1].t;
-    if (totalT <= 0) return;
-    // Save raw t values and normalize
-    const rawT = points.map(p => p.t);
-    for (const p of points) p.t /= totalT;
-    this.bakePath();
-    this.hasPath = true;
-    // Restore raw cumulative distances
-    for (let i = 0; i < points.length; i++) points[i].t = rawT[i];
-  }
-
-  private bakePath() {
+  private bakeTriggerMap() {
     const gl = this.gl;
-    const data = this.pathStore.bakePathMap(this.fieldSize, this.fieldSize, 0.12);
-    gl.bindTexture(gl.TEXTURE_2D, this.pathMapTexture);
+    const data = this.triggerGrid.bakeTexture(this.fieldSize, this.fieldSize);
+    gl.bindTexture(gl.TEXTURE_2D, this.triggerMapTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.fieldSize, this.fieldSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
   }
 
@@ -312,6 +336,14 @@ export class WindSimulation {
     this.audioActive = true;
     gl.bindTexture(gl.TEXTURE_2D, this.audioHistoryTexture);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.LUMINANCE, gl.UNSIGNED_BYTE, data);
+  }
+
+  setCameraFrame(video: HTMLVideoElement) {
+    const gl = this.gl;
+    this.cameraActive = true;
+    // Upload video frame to current camera texture (resized to 256x256 by GPU)
+    gl.bindTexture(gl.TEXTURE_2D, this.cameraTextures[this.currentCameraTexture]);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
   }
 
   resize(width: number, height: number) {
@@ -335,6 +367,29 @@ export class WindSimulation {
 
     this.time += dt;
 
+    // --- Step 0: Motion detection (if camera active) ---
+    if (this.cameraActive) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.motionVectorFBO.fbo);
+      gl.viewport(0, 0, this.fieldSize, this.fieldSize);
+      gl.disable(gl.BLEND);
+
+      gl.useProgram(this.motionDetectProgram.program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.cameraTextures[this.currentCameraTexture]);
+      gl.uniform1i(this.motionDetectProgram.uniforms.u_currentFrame, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, this.cameraTextures[1 - this.currentCameraTexture]);
+      gl.uniform1i(this.motionDetectProgram.uniforms.u_prevFrame, 1);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVBO);
+      gl.enableVertexAttribArray(this.motionDetectProgram.attributes.a_position);
+      gl.vertexAttribPointer(this.motionDetectProgram.attributes.a_position, 2, gl.FLOAT, false, 0, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      // Swap camera ping-pong
+      this.currentCameraTexture = 1 - this.currentCameraTexture;
+    }
+
     // --- Step 1: Update velocity field ---
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.writeVelocity.fbo);
     gl.viewport(0, 0, this.fieldSize, this.fieldSize);
@@ -344,6 +399,14 @@ export class WindSimulation {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.readVelocity.texture);
     gl.uniform1i(this.velocityProgram.uniforms.u_prevVelocity, 0);
+
+    // Camera motion texture on unit 1
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.motionVectorFBO.texture);
+    gl.uniform1i(this.velocityProgram.uniforms.u_cameraMotion, 1);
+    gl.uniform1f(this.velocityProgram.uniforms.u_cameraActive, this.cameraActive ? 1.0 : 0.0);
+    gl.uniform1f(this.velocityProgram.uniforms.u_cameraStrength, 3.0);
+
     gl.uniform2f(this.velocityProgram.uniforms.u_mousePos, this.mousePos[0], this.mousePos[1]);
     gl.uniform2f(this.velocityProgram.uniforms.u_mouseVel, this.mouseVel[0], this.mouseVel[1]);
     gl.uniform1f(this.velocityProgram.uniforms.u_mouseActive, this.mouseActive ? 1.0 : 0.0);
@@ -386,10 +449,10 @@ export class WindSimulation {
     gl.bindTexture(gl.TEXTURE_2D, this.readVelocity.texture);
     gl.uniform1i(this.arrowProgram.uniforms.u_velocityField, 0);
 
-    // Texture unit 1: path map
+    // Texture unit 1: trigger map
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, this.pathMapTexture);
-    gl.uniform1i(this.arrowProgram.uniforms.u_pathMap, 1);
+    gl.bindTexture(gl.TEXTURE_2D, this.triggerMapTexture);
+    gl.uniform1i(this.arrowProgram.uniforms.u_triggerMap, 1);
 
     // Texture unit 2: audio history
     gl.activeTexture(gl.TEXTURE2);
@@ -397,7 +460,8 @@ export class WindSimulation {
     gl.uniform1i(this.arrowProgram.uniforms.u_audioHistory, 2);
 
     gl.uniform1f(this.arrowProgram.uniforms.u_audioActive, this.audioActive ? 1.0 : 0.0);
-    gl.uniform1f(this.arrowProgram.uniforms.u_hasPath, this.hasPath ? 1.0 : 0.0);
+    gl.uniform1f(this.arrowProgram.uniforms.u_hasTriggers, this.hasTriggers ? 1.0 : 0.0);
+    gl.uniform1f(this.arrowProgram.uniforms.u_maxSequenceIndex, Math.max(1, this.triggerGrid.maxSequenceIndex));
     gl.uniform1f(this.arrowProgram.uniforms.u_time, this.time);
     gl.uniform2f(this.arrowProgram.uniforms.u_resolution, this.canvas.width, this.canvas.height);
     gl.uniform1f(this.arrowProgram.uniforms.u_arrowScale, 1.2);
@@ -433,13 +497,17 @@ export class WindSimulation {
       gl.deleteFramebuffer(fbo);
       gl.deleteTexture(texture);
     }
-    gl.deleteTexture(this.pathMapTexture);
+    gl.deleteTexture(this.triggerMapTexture);
     gl.deleteTexture(this.audioHistoryTexture);
+    for (const tex of this.cameraTextures) gl.deleteTexture(tex);
+    gl.deleteFramebuffer(this.motionVectorFBO.fbo);
+    gl.deleteTexture(this.motionVectorFBO.texture);
     gl.deleteBuffer(this.arrowVBO);
     gl.deleteBuffer(this.gridVBO);
     gl.deleteBuffer(this.quadVBO);
     gl.deleteProgram(this.arrowProgram.program);
     gl.deleteProgram(this.velocityProgram.program);
     gl.deleteProgram(this.diffuseProgram.program);
+    gl.deleteProgram(this.motionDetectProgram.program);
   }
 }

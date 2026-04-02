@@ -8,6 +8,10 @@ uniform float u_decay;         // decay factor per frame
 uniform float u_radius;        // influence radius
 uniform float u_dt;
 
+uniform sampler2D u_cameraMotion;
+uniform float u_cameraActive;
+uniform float u_cameraStrength;
+
 varying vec2 v_uv;
 
 void main() {
@@ -27,6 +31,13 @@ void main() {
 
         // Add mouse velocity with influence falloff
         vel += u_mouseVel * influence * u_dt * 8.0;
+    }
+
+    // Add camera motion influence
+    if (u_cameraActive > 0.5) {
+        vec4 cam = texture2D(u_cameraMotion, v_uv);
+        vec2 camVel = cam.xy * 2.0 - 1.0;
+        vel += camVel * cam.a * cam.b * u_cameraStrength * u_dt;
     }
 
     // Clamp velocity magnitude

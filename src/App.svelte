@@ -2,17 +2,21 @@
   import { onMount } from 'svelte';
   import { WindSimulation } from './lib/WindSimulation';
   import { AudioCapture } from './lib/AudioCapture';
+  import { CameraCapture } from './lib/CameraCapture';
 
   let canvas: HTMLCanvasElement;
   let sim: WindSimulation;
   let audio: AudioCapture;
+  let camera: CameraCapture;
   let animFrameId: number;
   let micEnabled = $state(false);
+  let cameraEnabled = $state(false);
   let drawing = false;
 
   onMount(() => {
     sim = new WindSimulation(canvas);
     audio = new AudioCapture();
+    camera = new CameraCapture();
 
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -28,6 +32,7 @@
       const dt = (now - lastTime) / 1000;
       lastTime = now;
       if (audio.isActive) sim.setAudioHistory(audio.updateHistory());
+      if (camera.ready) sim.setCameraFrame(camera.videoElement!);
       sim.update(dt);
       animFrameId = requestAnimationFrame(loop);
     };
@@ -37,6 +42,7 @@
       cancelAnimationFrame(animFrameId);
       ro.disconnect();
       audio.destroy();
+      camera.destroy();
       sim.destroy();
     };
   });
@@ -46,9 +52,14 @@
     micEnabled = ok;
   }
 
+  async function enableCamera() {
+    const ok = await camera.start();
+    cameraEnabled = ok;
+  }
+
   function handleMouseDown(e: MouseEvent) {
     drawing = true;
-    sim?.startNewPath();
+    sim?.startNewStroke();
     sim?.onMouseMove(e.clientX, e.clientY);
   }
 
@@ -61,14 +72,12 @@
   function handleMouseUp() {
     if (drawing) {
       drawing = false;
-      sim?.onMouseUp();
     }
   }
 
   function handleMouseLeave() {
     if (drawing) {
       drawing = false;
-      sim?.onMouseUp();
     }
     sim?.onMouseLeave();
   }
@@ -76,7 +85,7 @@
   function handleTouchStart(e: TouchEvent) {
     e.preventDefault();
     drawing = true;
-    sim?.startNewPath();
+    sim?.startNewStroke();
     const touch = e.touches[0];
     sim?.onMouseMove(touch.clientX, touch.clientY);
   }
@@ -92,7 +101,6 @@
   function handleTouchEnd() {
     if (drawing) {
       drawing = false;
-      sim?.onMouseUp();
     }
     sim?.onMouseLeave();
   }
@@ -109,11 +117,18 @@
   ontouchend={handleTouchEnd}
 ></canvas>
 
-{#if !micEnabled}
-  <button class="mic-btn" onclick={enableMic}>
-    Enable Mic
-  </button>
-{/if}
+<div class="controls">
+  {#if !micEnabled}
+    <button class="ctrl-btn" onclick={enableMic}>
+      Enable Mic
+    </button>
+  {/if}
+  {#if !cameraEnabled}
+    <button class="ctrl-btn" onclick={enableCamera}>
+      Enable Camera
+    </button>
+  {/if}
+</div>
 
 <style>
   :global(body) {
@@ -127,12 +142,17 @@
     cursor: crosshair;
   }
 
-  .mic-btn {
+  .controls {
     position: fixed;
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
+    display: flex;
+    gap: 12px;
+  }
+
+  .ctrl-btn {
     padding: 10px 24px;
     background: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.7);
@@ -144,7 +164,7 @@
     transition: background 0.2s, color 0.2s;
   }
 
-  .mic-btn:hover {
+  .ctrl-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     color: white;
   }
