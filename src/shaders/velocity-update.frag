@@ -1,0 +1,45 @@
+precision highp float;
+
+uniform sampler2D u_prevVelocity;
+uniform vec2 u_mousePos;       // normalized 0..1
+uniform vec2 u_mouseVel;       // normalized velocity
+uniform float u_mouseActive;   // 1.0 if mouse is active
+uniform float u_decay;         // decay factor per frame
+uniform float u_radius;        // influence radius
+uniform float u_dt;
+
+varying vec2 v_uv;
+
+void main() {
+    vec4 prev = texture2D(u_prevVelocity, v_uv);
+
+    // Decode previous velocity from 0..1 to -1..1
+    vec2 vel = prev.xy * 2.0 - 1.0;
+
+    // Apply decay
+    vel *= u_decay;
+
+    // Add mouse influence
+    if (u_mouseActive > 0.5) {
+        vec2 diff = v_uv - u_mousePos;
+        float dist = length(diff);
+        float influence = exp(-dist * dist / (u_radius * u_radius));
+
+        // Add mouse velocity with influence falloff
+        vel += u_mouseVel * influence * u_dt * 8.0;
+    }
+
+    // Clamp velocity magnitude
+    float speed = length(vel);
+    if (speed > 1.0) {
+        vel = vel / speed;
+    }
+
+    // Snap to zero — must exceed UNSIGNED_BYTE quantization step (~0.008)
+    if (speed < 0.04) {
+        vel = vec2(0.0);
+    }
+
+    // Encode back to 0..1
+    gl_FragColor = vec4(vel * 0.5 + 0.5, 0.0, 1.0);
+}
