@@ -15,9 +15,9 @@ export class AudioCapture {
     return this._isActive;
   }
 
-  async start(): Promise<boolean> {
+  async start(existingStream?: MediaStream): Promise<boolean> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = existingStream ?? await navigator.mediaDevices.getUserMedia({ audio: true });
       this.context = new AudioContext();
       this.analyser = this.context.createAnalyser();
       this.analyser.fftSize = 256;
@@ -30,7 +30,7 @@ export class AudioCapture {
       this._isActive = true;
       return true;
     } catch (e) {
-      console.warn('Mic access denied or unavailable:', e);
+      console.warn("Mic access denied or unavailable:", e);
       return false;
     }
   }
@@ -55,7 +55,10 @@ export class AudioCapture {
 
     // Envelope: rise fast, decay slowly so arrows stay big longer
     const incoming = Math.min(1, delta * 8);
-    const prev = this.history[(this.historyHead - 1 + this.historySize) % this.historySize];
+    const prev =
+      this.history[
+        (this.historyHead - 1 + this.historySize) % this.historySize
+      ];
     const decayed = prev * 0.92;
     const value = Math.max(incoming, decayed);
 
@@ -66,7 +69,8 @@ export class AudioCapture {
     // Build output: newest first so index 0 = path start
     const out = new Uint8Array(this.historySize);
     for (let i = 0; i < this.historySize; i++) {
-      const idx = (this.historyHead - 1 - i + this.historySize) % this.historySize;
+      const idx =
+        (this.historyHead - 1 - i + this.historySize) % this.historySize;
       out[i] = Math.floor(this.history[idx] * 255);
     }
     return out;

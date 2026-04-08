@@ -29,7 +29,8 @@ export class PathStore {
       const len = Math.max(dist, 0.0001);
 
       this.points.push({
-        x, y,
+        x,
+        y,
         dx: dx / len,
         dy: dy / len,
         t: this.totalLength,
@@ -94,14 +95,14 @@ export class PathStore {
 
           // 16-bit path parameter: high byte in R, low byte in G
           const t16 = Math.floor(nearest.t * 65535);
-          data[idx] = (t16 >> 8) & 0xFF;          // R: t high
-          data[idx + 1] = t16 & 0xFF;             // G: t low
+          data[idx] = (t16 >> 8) & 0xff; // R: t high
+          data[idx + 1] = t16 & 0xff; // G: t low
 
           // Direction as angle 0..2π mapped to 0..255
           const angle = Math.atan2(nearest.dy, nearest.dx);
-          data[idx + 2] = Math.floor(((angle + Math.PI) / (2 * Math.PI)) * 255);  // B: angle
+          data[idx + 2] = Math.floor(((angle + Math.PI) / (2 * Math.PI)) * 255); // B: angle
 
-          data[idx + 3] = Math.floor(proximity * 255);  // A: proximity
+          data[idx + 3] = Math.floor(proximity * 255); // A: proximity
         } else {
           data[idx] = 0;
           data[idx + 1] = 0;

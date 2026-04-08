@@ -11,12 +11,12 @@ export class CameraCapture {
     return this.video;
   }
 
-  async start(): Promise<boolean> {
+  async start(existingStream?: MediaStream): Promise<boolean> {
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
+      this.stream = existingStream ?? await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: 640, height: 480 },
       });
-      this.video = document.createElement('video');
+      this.video = document.createElement("video");
       this.video.srcObject = this.stream;
       this.video.autoplay = true;
       this.video.playsInline = true;
@@ -25,13 +25,17 @@ export class CameraCapture {
       this._isActive = true;
       return true;
     } catch (e) {
-      console.warn('Camera access denied or unavailable:', e);
+      console.warn("Camera access denied or unavailable:", e);
       return false;
     }
   }
 
   get ready(): boolean {
-    return this._isActive && this.video !== null && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+    return (
+      this._isActive &&
+      this.video !== null &&
+      this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+    );
   }
 
   destroy() {
