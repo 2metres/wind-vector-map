@@ -113,6 +113,19 @@ canvas {
   cursor: pointer;
 }
 
+.reset-btn {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+  color: rgba(255, 120, 120, 0.8);
+  border-color: rgba(255, 120, 120, 0.25);
+}
+
+.reset-btn:hover {
+  background: rgba(255, 120, 120, 0.12);
+  color: rgba(255, 140, 140, 1);
+}
+
 .panel select {
   width: 100%;
   padding: 6px 8px;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { AudioCapture, CameraCapture, WindSimulation } from "./lib";
+  import { settingsStore, DEFAULTS, type Settings } from "./lib/settingsStore";
 
   let canvas: HTMLCanvasElement;
   let sim: WindSimulation;
@@ -12,7 +13,59 @@
   let panelOpen = $state(false);
   let drawing = false;
   let fullscreen = $state(false);
-  let renderMode = $state(0);
+
+  // Settings synced from zustand store (persisted to localStorage)
+  let cameraStrength = $state(settingsStore.getState().cameraStrength);
+  let audioBoostMin = $state(settingsStore.getState().audioBoostMin);
+  let audioBoostMax = $state(settingsStore.getState().audioBoostMax);
+  let velocityDecay = $state(settingsStore.getState().velocityDecay);
+  let cameraVelocityDecay = $state(settingsStore.getState().cameraVelocityDecay);
+  let triggerDecay = $state(settingsStore.getState().triggerDecay);
+  let diffusion = $state(settingsStore.getState().diffusion);
+  let motionThreshold = $state(settingsStore.getState().motionThreshold);
+  let renderMode = $state(settingsStore.getState().renderMode);
+
+  // Keep zustand in sync when Svelte state changes
+  $effect(() => {
+    settingsStore.getState().set("cameraStrength", cameraStrength);
+  });
+  $effect(() => {
+    settingsStore.getState().set("audioBoostMin", audioBoostMin);
+  });
+  $effect(() => {
+    settingsStore.getState().set("audioBoostMax", audioBoostMax);
+  });
+  $effect(() => {
+    settingsStore.getState().set("velocityDecay", velocityDecay);
+  });
+  $effect(() => {
+    settingsStore.getState().set("cameraVelocityDecay", cameraVelocityDecay);
+  });
+  $effect(() => {
+    settingsStore.getState().set("triggerDecay", triggerDecay);
+  });
+  $effect(() => {
+    settingsStore.getState().set("diffusion", diffusion);
+  });
+  $effect(() => {
+    settingsStore.getState().set("motionThreshold", motionThreshold);
+  });
+  $effect(() => {
+    settingsStore.getState().set("renderMode", renderMode);
+  });
+
+  function resetDefaults() {
+    settingsStore.getState().resetDefaults();
+    cameraStrength = DEFAULTS.cameraStrength;
+    audioBoostMin = DEFAULTS.audioBoostMin;
+    audioBoostMax = DEFAULTS.audioBoostMax;
+    velocityDecay = DEFAULTS.velocityDecay;
+    cameraVelocityDecay = DEFAULTS.cameraVelocityDecay;
+    triggerDecay = DEFAULTS.triggerDecay;
+    diffusion = DEFAULTS.diffusion;
+    motionThreshold = DEFAULTS.motionThreshold;
+    renderMode = DEFAULTS.renderMode;
+  }
 
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -23,16 +76,6 @@
       fullscreen = false;
     }
   }
-
-  // Settings — odd-range ones use 0–1 sliders mapped to real values
-  let cameraStrength = $state(25);
-  let audioBoostMin = $state(0.05);
-  let audioBoostMax = $state(8);
-  let velocityDecay = $state(0.99);
-  let cameraVelocityDecay = $state(0.9);
-  let triggerDecay = $state(0.999);
-  let diffusion = $state(0.15);
-  let motionThreshold = $state(2);
 
   onMount(() => {
     sim = new WindSimulation(canvas);
@@ -280,6 +323,10 @@
           <option value={2}>Lines (─│╱╲)</option>
         </select>
       </label>
+    </div>
+
+    <div class="panel-section">
+      <button class="ctrl-btn reset-btn" onclick={resetDefaults}>Reset to Defaults</button>
     </div>
   </div>
 {/if}
