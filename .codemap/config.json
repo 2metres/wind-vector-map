@@ -1,0 +1,14 @@
+{
+  "only": [
+    "ts",
+    "svelte",
+    "frag",
+    "vert",
+    "gitignore"
+  ],
+  "budgets": {},
+  "routing": {
+    "retrieval": {}
+  },
+  "drift": {}
+}
