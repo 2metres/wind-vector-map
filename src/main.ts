@@ -1,9 +1,9 @@
 import { mount } from "svelte";
 
 import "./app.css";
-import App from "./App.svelte";
+import Shell from "./Shell.svelte";
 
-const app = mount(App, {
+const app = mount(Shell, {
   target: document.getElementById("app")!,
 });
 

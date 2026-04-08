@@ -1,0 +1,17 @@
+export interface ExperimentEntry {
+  id: string;
+  label: string;
+  loader: () => Promise<{ default: typeof import("svelte").SvelteComponent }>;
+}
+
+export const experiments: ExperimentEntry[] = [
+  {
+    id: "vector-map",
+    label: "Vector Map",
+    loader: () => import("./vector-map/VectorMap.svelte"),
+  },
+];
+
+export function getExperiment(id: string): ExperimentEntry | undefined {
+  return experiments.find((e) => e.id === id);
+}
