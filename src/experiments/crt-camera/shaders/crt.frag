@@ -43,13 +43,7 @@ vec3 ToSrgb(vec3 c) {
 }
 
 vec3 CrtsFetch(vec2 uv) {
-  // Aspect-correct "cover" scaling: fill screen from 640x480 video
-  vec2 screenAspect = u_resolution / max(u_resolution.x, u_resolution.y);
-  vec2 videoAspect = u_videoSize / max(u_videoSize.x, u_videoSize.y);
-  vec2 scale = screenAspect / videoAspect;
-  float coverScale = max(scale.x, scale.y);
-  vec2 adjustedUV = (uv - 0.5) * (scale / coverScale) + 0.5;
-  return FromSrgb(texture2D(u_texture, adjustedUV).rgb);
+  return FromSrgb(texture2D(u_texture, uv).rgb);
 }
 
 float CrtsMax3F1(float a, float b, float c) {

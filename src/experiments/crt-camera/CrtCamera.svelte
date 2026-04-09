@@ -97,8 +97,22 @@
     enableCamera();
   }
 
-  function handleResize(_width: number, _height: number) {
-    if (gl) gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  function handleResize(width: number, height: number) {
+    if (!gl) return;
+    const dpr = window.devicePixelRatio || 1;
+    // Fit 4:3 box inside available space
+    const targetAspect = 4 / 3;
+    let w = width;
+    let h = width / targetAspect;
+    if (h > height) {
+      h = height;
+      w = height * targetAspect;
+    }
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = `${Math.round(w)}px`;
+    canvas.style.height = `${Math.round(h)}px`;
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   }
 
   onMount(() => {
@@ -121,7 +135,9 @@
   }
 </script>
 
-<CanvasContainer oncanvas={handleCanvas} onresize={handleResize} />
+<div class="crt-viewport">
+  <CanvasContainer oncanvas={handleCanvas} onresize={handleResize} />
+</div>
 
 <ControlBar>
   <button onclick={() => (panelOpen = !panelOpen)}>
@@ -132,3 +148,14 @@
 {#if panelOpen}
   <CrtCameraSettings />
 {/if}
+
+<style>
+  .crt-viewport {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+  }
+</style>
