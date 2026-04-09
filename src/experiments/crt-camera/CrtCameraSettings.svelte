@@ -14,6 +14,7 @@
   let noiseShape = $state(settingsStore.getState().noiseShape);
   let trackingSpeed = $state(settingsStore.getState().trackingSpeed);
   let trackingIntensity = $state(settingsStore.getState().trackingIntensity);
+  let audioReactive = $state(settingsStore.getState().audioReactive);
 
   $effect(() => { settingsStore.getState().set("scale", scale); });
   $effect(() => { settingsStore.getState().set("warp", warp); });
@@ -27,6 +28,7 @@
   $effect(() => { settingsStore.getState().set("noiseShape", noiseShape); });
   $effect(() => { settingsStore.getState().set("trackingSpeed", trackingSpeed); });
   $effect(() => { settingsStore.getState().set("trackingIntensity", trackingIntensity); });
+  $effect(() => { settingsStore.getState().set("audioReactive", audioReactive); });
 
   function resetDefaults() {
     settingsStore.getState().resetDefaults();
@@ -42,6 +44,7 @@
     noiseShape = DEFAULTS.noiseShape;
     trackingSpeed = DEFAULTS.trackingSpeed;
     trackingIntensity = DEFAULTS.trackingIntensity;
+    audioReactive = DEFAULTS.audioReactive;
   }
 </script>
 
@@ -80,6 +83,10 @@
     </div>
     <RangeSlider label="Tracking Speed" bind:value={trackingSpeed} min={0} max={5} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Tracking Intensity" bind:value={trackingIntensity} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <label class="checkbox-row">
+      <input type="checkbox" bind:checked={audioReactive} />
+      Audio-Reactive Tracking
+    </label>
   </div>
 
   <div class="section">
@@ -130,6 +137,18 @@
     background: rgba(255, 255, 255, 0.15);
     color: #fff;
     border-color: rgba(255, 255, 255, 0.3);
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .checkbox-row input {
+    accent-color: rgba(255, 255, 255, 0.6);
   }
   .reset-btn {
     width: 100%;

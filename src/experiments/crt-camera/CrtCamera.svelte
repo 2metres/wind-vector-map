@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { CanvasContainer, createAnimationLoop } from "../../lib/canvas";
-  import { CameraCapture } from "../../lib/media";
+  import { AudioCapture, CameraCapture } from "../../lib/media";
   import { createProgram, createQuadVBO, drawQuad } from "../../lib/gl";
   import { ControlBar } from "../../lib/ui";
   import { crtFrag, fullscreenVert } from "./shaders";
@@ -11,6 +11,8 @@
 
   let panelOpen = $state(false);
   let camera: CameraCapture;
+  let audio: AudioCapture;
+  let currentAudioLevel = 1.0;
   let canvas: HTMLCanvasElement;
   let gl: WebGLRenderingContext;
   let cameraTexture: WebGLTexture | null = null;
@@ -60,7 +62,8 @@
     gl.uniform1f(crtProgram.uniforms["u_noise"], s.noise);
     gl.uniform1f(crtProgram.uniforms["u_noiseShape"], s.noiseShape);
     gl.uniform1f(crtProgram.uniforms["u_trackingSpeed"], s.trackingSpeed);
-    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], s.trackingIntensity);
+    const audioLevel = (s.audioReactive && audio?.isActive) ? currentAudioLevel : 1.0;
+    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], s.trackingIntensity * audioLevel);
 
     const video = camera.videoElement;
     const vw = video ? video.videoWidth || 640 : 640;
@@ -74,6 +77,10 @@
     if (!gl) return;
     elapsedTime += dt;
     if (camera.ready) uploadCameraFrame();
+    if (audio?.isActive) {
+      const hist = audio.updateHistory();
+      currentAudioLevel = hist[0] / 255;
+    }
     render();
   });
 
@@ -119,6 +126,7 @@
   onMount(() => {
     return () => {
       loop.stop();
+      audio?.destroy();
       camera?.destroy();
       if (cameraTexture && gl) gl.deleteTexture(cameraTexture);
     };
@@ -127,9 +135,12 @@
   async function enableCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
         video: { facingMode: "user", width: 640, height: 480 },
       });
       await camera.start(stream);
+      audio = new AudioCapture();
+      await audio.start(stream);
     } catch (e) {
       console.warn("Camera access denied:", e);
     }

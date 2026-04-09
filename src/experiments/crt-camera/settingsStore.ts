@@ -13,6 +13,7 @@ export interface CrtSettings {
   noiseShape: number;
   trackingSpeed: number;
   trackingIntensity: number;
+  audioReactive: boolean;
 }
 
 export const DEFAULTS: CrtSettings = {
@@ -28,6 +29,7 @@ export const DEFAULTS: CrtSettings = {
   noiseShape: 0,
   trackingSpeed: 1.7,
   trackingIntensity: 0.13,
+  audioReactive: false,
 };
 
 export const settingsStore = createPersistedStore<CrtSettings>("crt-camera:settings", DEFAULTS);
