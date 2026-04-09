@@ -138,10 +138,9 @@ vec3 CrtsFilter(
   // Convert to {-1 to 1} range
   vec2 pos = ipos * twoDivOutputSize - vec2(1.0);
 
-  // Barrel distortion (u_warp smoothly controls strength)
-  pos *= vec2(
-    1.0 + (pos.y * pos.y) * warp.x * u_warp,
-    1.0 + (pos.x * pos.x) * warp.y * u_warp);
+  // Spherical barrel distortion (radial from center)
+  float r2 = dot(pos, pos);
+  pos *= 1.0 + r2 * warp * u_warp;
 
   // Leave in {0 to inputSize}
   pos = pos * halfInputSize + halfInputSize;
@@ -242,6 +241,12 @@ void main() {
   // Recalculate fragCoord from potentially distorted UV
   fragCoord = uv * u_resolution;
 
+  // Compute warp edge mask: black out areas pushed outside the tube
+  vec2 warpPos = (uv * 2.0 - 1.0);
+  float wr2 = dot(warpPos, warpPos);
+  warpPos *= 1.0 + wr2 * vec2(1.0 / (50.0 * aspect), 1.0 / 50.0) * u_warp;
+  float warpEdge = smoothstep(1.0, 0.98, max(abs(warpPos.x), abs(warpPos.y)));
+
   vec3 color = CrtsFilter(
     fragCoord,
     vec2(1.0),
@@ -320,5 +325,6 @@ void main() {
     color *= mix(1.0, 1.0 - vig, 1.0 - u_minVin);
   }
 
+  color *= warpEdge;
   gl_FragColor = vec4(ToSrgb(max(color, vec3(0.0))), 1.0);
 }
