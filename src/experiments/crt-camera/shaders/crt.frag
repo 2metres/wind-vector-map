@@ -23,7 +23,7 @@ uniform float u_trackingSpeed; // tracking line scroll speed (default 0.0, range
 uniform float u_trackingIntensity; // tracking line strength (default 0.0, range 0-1)
 uniform float u_trackingBlend;    // 0=subtract, 1=multiply, 2=add, 3=screen
 uniform float u_noiseShape;   // 0=snow, 1=rgb, 2=fine
-uniform float u_scanlineGlitch; // scanline irregularity (0=off, 0-1)
+uniform float u_trackingGlitch; // scanline irregularity (0=off, 0-1)
 
 varying vec2 v_uv;
 
@@ -155,12 +155,6 @@ vec3 CrtsFilter(
 
   // Snap to center of first scanline
   float y0 = floor(pos.y - 0.5) + 0.5;
-  // Scanline glitch: jitter each scanline's vertical position
-  if (u_scanlineGlitch > 0.0) {
-    float glitchSeed = floor(u_time * 15.0);
-    float jitter = (hash(vec2(y0, glitchSeed)) * 2.0 - 1.0) * u_scanlineGlitch * 2.0;
-    y0 += jitter;
-  }
   // Snap to center of one of four pixels
   float x0 = floor(pos.x - 1.5) + 0.5;
 
@@ -247,6 +241,14 @@ void main() {
   // Shift UV inward toward center near tracking line (smooth gradient, no center seam)
   float xOff = uv.x - 0.5;
   uv.x -= xOff * track * 0.02 * u_trackingIntensity;
+
+  // Tracking glitch: vertical jitter per horizontal band
+  if (u_trackingGlitch > 0.0) {
+    float glitchSeed = floor(u_time * 15.0);
+    float bandX = floor(uv.x * 20.0);
+    float jitter = (hash(vec2(bandX, glitchSeed)) * 2.0 - 1.0) * u_trackingGlitch * 0.05;
+    uv.y += jitter * track;
+  }
 
   // Recalculate fragCoord from potentially distorted UV
   fragCoord = uv * u_resolution;

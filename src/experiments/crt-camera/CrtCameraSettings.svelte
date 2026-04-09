@@ -12,7 +12,7 @@
   let chromatic = $state(settingsStore.getState().chromatic);
   let noise = $state(settingsStore.getState().noise);
   let noiseShape = $state(settingsStore.getState().noiseShape);
-  let scanlineGlitch = $state(settingsStore.getState().scanlineGlitch);
+  let trackingGlitch = $state(settingsStore.getState().trackingGlitch);
   let trackingSpeed = $state(settingsStore.getState().trackingSpeed);
   let trackingIntensity = $state(settingsStore.getState().trackingIntensity);
   let trackingBlend = $state(settingsStore.getState().trackingBlend);
@@ -28,7 +28,7 @@
   $effect(() => { settingsStore.getState().set("chromatic", chromatic); });
   $effect(() => { settingsStore.getState().set("noise", noise); });
   $effect(() => { settingsStore.getState().set("noiseShape", noiseShape); });
-  $effect(() => { settingsStore.getState().set("scanlineGlitch", scanlineGlitch); });
+  $effect(() => { settingsStore.getState().set("trackingGlitch", trackingGlitch); });
   $effect(() => { settingsStore.getState().set("trackingSpeed", trackingSpeed); });
   $effect(() => { settingsStore.getState().set("trackingIntensity", trackingIntensity); });
   $effect(() => { settingsStore.getState().set("trackingBlend", trackingBlend); });
@@ -46,7 +46,7 @@
     chromatic = DEFAULTS.chromatic;
     noise = DEFAULTS.noise;
     noiseShape = DEFAULTS.noiseShape;
-    scanlineGlitch = DEFAULTS.scanlineGlitch;
+    trackingGlitch = DEFAULTS.trackingGlitch;
     trackingSpeed = DEFAULTS.trackingSpeed;
     trackingIntensity = DEFAULTS.trackingIntensity;
     trackingBlend = DEFAULTS.trackingBlend;
@@ -59,7 +59,6 @@
     <h3>CRT Display</h3>
     <RangeSlider label="Scanline Scale" bind:value={scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Scanline Thickness" bind:value={thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Scanline Glitch" bind:value={scanlineGlitch} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Blur" bind:value={blur} min={-4.0} max={0.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Mask Intensity" bind:value={mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <div class="toggle-label">Mask Type</div>
@@ -89,6 +88,7 @@
     </div>
     <RangeSlider label="Tracking Speed" bind:value={trackingSpeed} min={0} max={5} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Tracking Intensity" bind:value={trackingIntensity} min={0} max={3} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Tracking Glitch" bind:value={trackingGlitch} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <div class="toggle-label">Tracking Blend</div>
     <div class="toggle-group">
       <button class:active={trackingBlend === 0} onclick={() => trackingBlend = 0}>Subtract</button>
