@@ -13,6 +13,8 @@
   let camera: CameraCapture;
   let audio: AudioCapture;
   let currentAudioLevel = 0.0;
+  let currentAudioLow = 0.0;
+  let currentAudioHigh = 0.0;
   let canvas: HTMLCanvasElement;
   let gl: WebGLRenderingContext;
   let cameraTexture: WebGLTexture | null = null;
@@ -39,8 +41,23 @@
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, camera.videoElement);
   }
 
+  function audioValue(mode: number): number {
+    if (!audio?.isActive) return 0;
+    switch (mode) {
+      case 1: return currentAudioLow;
+      case 2: return currentAudioLow + currentAudioHigh;
+      case 3: return currentAudioHigh;
+      default: return 0;
+    }
+  }
+
   function render() {
     const s = settingsStore.getState();
+
+    function ar(key: string, base: number): number {
+      const mode = s.audioReactive[key] ?? 0;
+      return base + base * audioValue(mode);
+    }
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.useProgram(crtProgram.program);
 
@@ -50,25 +67,24 @@
 
     gl.uniform2f(crtProgram.uniforms["u_resolution"],
       gl.drawingBufferWidth, gl.drawingBufferHeight);
-    gl.uniform1f(crtProgram.uniforms["u_scale"], s.scale);
-    gl.uniform1f(crtProgram.uniforms["u_warp"], s.warp);
-    gl.uniform1f(crtProgram.uniforms["u_minVin"], s.minVin);
-    gl.uniform1f(crtProgram.uniforms["u_thin"], s.thin);
-    gl.uniform1f(crtProgram.uniforms["u_blur"], -4.0 * (1.0 - s.blur / 10.0));
-    gl.uniform1f(crtProgram.uniforms["u_mask"], s.mask);
+    gl.uniform1f(crtProgram.uniforms["u_scale"], ar("scale", s.scale));
+    gl.uniform1f(crtProgram.uniforms["u_warp"], ar("warp", s.warp));
+    gl.uniform1f(crtProgram.uniforms["u_minVin"], ar("minVin", s.minVin));
+    gl.uniform1f(crtProgram.uniforms["u_thin"], ar("thin", s.thin));
+    gl.uniform1f(crtProgram.uniforms["u_blur"], -4.0 * (1.0 - ar("blur", s.blur) / 10.0));
+    gl.uniform1f(crtProgram.uniforms["u_mask"], ar("mask", s.mask));
     gl.uniform1f(crtProgram.uniforms["u_maskType"], s.maskType);
     gl.uniform1f(crtProgram.uniforms["u_time"], elapsedTime);
     gl.uniform1f(crtProgram.uniforms["u_antiMoire"], s.antiMoire ? 1.0 : 0.0);
-    gl.uniform1f(crtProgram.uniforms["u_chromatic"], s.chromatic);
-    gl.uniform1f(crtProgram.uniforms["u_noise"], s.noise);
+    gl.uniform1f(crtProgram.uniforms["u_chromatic"], ar("chromatic", s.chromatic));
+    gl.uniform1f(crtProgram.uniforms["u_noise"], ar("noise", s.noise));
     gl.uniform1f(crtProgram.uniforms["u_noiseShape"], s.noiseShape);
-    gl.uniform1f(crtProgram.uniforms["u_glow"], s.glow);
-    const audioLevel = (s.audioReactive && audio?.isActive) ? currentAudioLevel : 0.0;
-    gl.uniform1f(crtProgram.uniforms["u_trackingScale"], s.trackingScale + s.trackingScale * audioLevel);
-    gl.uniform1f(crtProgram.uniforms["u_trackingGlitch"], s.trackingGlitch);
-    gl.uniform1f(crtProgram.uniforms["u_trackingGlitchScale"], s.trackingGlitchScale);
-    gl.uniform1f(crtProgram.uniforms["u_trackingSpeed"], s.trackingSpeed);
-    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], s.trackingIntensity + audioLevel);
+    gl.uniform1f(crtProgram.uniforms["u_glow"], ar("glow", s.glow));
+    gl.uniform1f(crtProgram.uniforms["u_trackingScale"], ar("trackingScale", s.trackingScale));
+    gl.uniform1f(crtProgram.uniforms["u_trackingGlitch"], ar("trackingGlitch", s.trackingGlitch));
+    gl.uniform1f(crtProgram.uniforms["u_trackingGlitchScale"], ar("trackingGlitchScale", s.trackingGlitchScale));
+    gl.uniform1f(crtProgram.uniforms["u_trackingSpeed"], ar("trackingSpeed", s.trackingSpeed));
+    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], ar("trackingIntensity", s.trackingIntensity));
     gl.uniform1f(crtProgram.uniforms["u_trackingBlend"], s.trackingBlend);
 
     const video = camera.videoElement;
@@ -86,6 +102,8 @@
     if (audio?.isActive) {
       audio.updateHistory();
       currentAudioLevel = audio.level;
+      currentAudioLow = audio.low;
+      currentAudioHigh = audio.high;
     }
     render();
   });
