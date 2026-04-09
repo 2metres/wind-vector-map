@@ -46,9 +46,9 @@
   <div class="section">
     <h3>CRT Display</h3>
     <RangeSlider label="Scanline Scale" bind:value={scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Scanline Thin" bind:value={thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Scanline Thickness" bind:value={thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Blur" bind:value={blur} min={-3.0} max={-1.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Mask Intensity" bind:value={mask} min={0.25} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Mask Intensity" bind:value={mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <SelectInput label="Mask Type" bind:value={maskType}>
       <option value={0}>Shadow</option>
       <option value={1}>Grille</option>
@@ -59,7 +59,7 @@
 
   <div class="section">
     <h3>Tube</h3>
-    <RangeSlider label="Warp" bind:value={warp} min={0.0} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Warp" bind:value={warp} min={0.0} max={8.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Vignette" bind:value={minVin} min={0.0} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
   </div>
 
