@@ -364,10 +364,20 @@ void main() {
     color = 1.0 - min((1.0 - color) / max(t + 0.001, 0.001), vec3(1.0)); // 6: burn
   }
 
-  // Phosphor glow: cheap bloom via box-sampled blur added to bright areas
+  color *= warpEdge;
+
+  // Post-process vignette
+  if (u_minVin < 0.99) {
+    vec2 vigUV = v_uv * 2.0 - 1.0;
+    float vigDist = length(vigUV);
+    float vig = smoothstep(0.3, 1.4, vigDist);
+    color -= vig * (1.0 - u_minVin);
+  }
+
+  // Phosphor glow: bloom added after vignette + warp so it bleeds through darkened edges
   if (u_glow > 0.0) {
     vec2 px = 1.0 / u_resolution;
-    float r = 3.0; // sample radius in pixels
+    float r = 3.0;
     vec3 bloom = vec3(0.0);
     bloom += texture2D(u_texture, uv + vec2(-r, -r) * px).rgb;
     bloom += texture2D(u_texture, uv + vec2( 0, -r) * px).rgb;
@@ -379,16 +389,6 @@ void main() {
     bloom += texture2D(u_texture, uv + vec2( r,  r) * px).rgb;
     bloom /= 8.0;
     color += bloom * u_glow;
-  }
-
-  color *= warpEdge;
-
-  // Post-process vignette: subtract blend at the very end
-  if (u_minVin < 0.99) {
-    vec2 vigUV = v_uv * 2.0 - 1.0;
-    float vigDist = length(vigUV);
-    float vig = smoothstep(0.3, 1.4, vigDist);
-    color -= vig * (1.0 - u_minVin);
   }
 
   gl_FragColor = vec4(ToSrgb(max(color, vec3(0.0))), 1.0);
