@@ -115,93 +115,103 @@
 </script>
 
 <SettingsPanel onmousedown={(e) => e.stopPropagation()}>
-  <div class="section">
-    <h3>CRT Display</h3>
-    <RangeSlider label="Scanline Scale" bind:value={scale} bind:audioMode={ar.scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Scanline Thickness" bind:value={thin} bind:audioMode={ar.thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <label class="checkbox-row">
-      <input type="checkbox" bind:checked={antiMoire} />
-      Anti-Moiré
-    </label>
-    <RangeSlider label="Blur" bind:value={blur} bind:audioMode={ar.blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
-    <RangeSlider label="Glow" bind:value={glow} bind:audioMode={ar.glow} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Mask Intensity" bind:value={mask} bind:audioMode={ar.mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <div class="toggle-label">Mask Type</div>
-    <div class="toggle-group">
-      <button class:active={maskType === 0} onclick={() => maskType = 0}>Shadow</button>
-      <button class:active={maskType === 1} onclick={() => maskType = 1}>Grille</button>
-      <button class:active={maskType === 2} onclick={() => maskType = 2}>Lite</button>
-      <button class:active={maskType === 3} onclick={() => maskType = 3}>None</button>
-    </div>
-  </div>
-
-  <div class="section">
-    <h3>Tube</h3>
-    <RangeSlider label="Warp" bind:value={warp} bind:audioMode={ar.warp} min={0.0} max={32.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Vignette" bind:value={minVin} bind:audioMode={ar.minVin} min={0.0} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-  </div>
-
-  <div class="section">
-    <h3>VHS Effects</h3>
-    <RangeSlider label="Chromatic Aberration" bind:value={chromatic} bind:audioMode={ar.chromatic} min={0} max={100} step={0.1} formatValue={(v) => v.toFixed(1)} />
-    <RangeSlider label="Static Noise" bind:value={noise} bind:audioMode={ar.noise} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <div class="toggle-label">Noise Shape</div>
-    <div class="toggle-group">
-      <button class:active={noiseShape === 0} onclick={() => noiseShape = 0}>Snow</button>
-      <button class:active={noiseShape === 1} onclick={() => noiseShape = 1}>RGB</button>
-      <button class:active={noiseShape === 2} onclick={() => noiseShape = 2}>Fine</button>
-      <button class:active={noiseShape === 3} onclick={() => noiseShape = 3}>None</button>
-    </div>
-  </div>
-
-  <div class="section">
-    <h3>Tracking</h3>
-    <RangeSlider label="Speed" bind:value={trackingSpeed} bind:audioMode={ar.trackingSpeed} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
-    <RangeSlider label="Intensity" bind:value={trackingIntensity} bind:audioMode={ar.trackingIntensity} min={0} max={10} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Scale" bind:value={trackingScale} bind:audioMode={ar.trackingScale} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Glitch" bind:value={trackingGlitch} bind:audioMode={ar.trackingGlitch} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Glitch Scale" bind:value={trackingGlitchScale} bind:audioMode={ar.trackingGlitchScale} min={1} max={200} step={1} formatValue={(v) => v.toFixed(0)} />
-    <label class="select-row">
-      Blend
-      <select bind:value={trackingBlend}>
-        <option value={0}>Subtract</option>
-        <option value={1}>Multiply</option>
-        <option value={2}>Add</option>
-        <option value={3}>Screen</option>
-        <option value={4}>Overlay</option>
-        <option value={5}>Dodge</option>
-        <option value={6}>Burn</option>
-      </select>
-    </label>
-  </div>
-
-  <div class="section">
-    <h3>Presets</h3>
-    {#if presetNames.length > 0}
-      <div class="preset-list">
-        {#each presetNames as name}
-          <div class="preset-row">
-            <button class="preset-load" onclick={() => handleLoadPreset(name)}>{name}</button>
-            <button class="preset-delete" onclick={() => handleDeletePreset(name)} title="Delete">&times;</button>
-          </div>
-        {/each}
+  <details class="section" open>
+    <summary>CRT Display</summary>
+    <div class="section-body">
+      <RangeSlider label="Scanline Scale" bind:value={scale} bind:audioMode={ar.scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Scanline Thickness" bind:value={thin} bind:audioMode={ar.thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <label class="checkbox-row">
+        <input type="checkbox" bind:checked={antiMoire} />
+        Anti-Moiré
+      </label>
+      <RangeSlider label="Blur" bind:value={blur} bind:audioMode={ar.blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Glow" bind:value={glow} bind:audioMode={ar.glow} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Mask Intensity" bind:value={mask} bind:audioMode={ar.mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <div class="toggle-label">Mask Type</div>
+      <div class="toggle-group">
+        <button class:active={maskType === 0} onclick={() => maskType = 0}>Shadow</button>
+        <button class:active={maskType === 1} onclick={() => maskType = 1}>Grille</button>
+        <button class:active={maskType === 2} onclick={() => maskType = 2}>Lite</button>
+        <button class:active={maskType === 3} onclick={() => maskType = 3}>None</button>
       </div>
-    {/if}
-    {#if savingPreset}
-      <div class="preset-save-row">
-        <input
-          class="preset-input"
-          type="text"
-          placeholder="Preset name…"
-          bind:value={presetName}
-          onkeydown={(e: KeyboardEvent) => { if (e.key === "Enter") handleSavePreset(); if (e.key === "Escape") savingPreset = false; }}
-        />
-        <button class="preset-confirm" onclick={handleSavePreset}>Save</button>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>Tube</summary>
+    <div class="section-body">
+      <RangeSlider label="Warp" bind:value={warp} bind:audioMode={ar.warp} min={0.0} max={32.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Vignette" bind:value={minVin} bind:audioMode={ar.minVin} min={0.0} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>VHS Effects</summary>
+    <div class="section-body">
+      <RangeSlider label="Chromatic Aberration" bind:value={chromatic} bind:audioMode={ar.chromatic} min={0} max={100} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Static Noise" bind:value={noise} bind:audioMode={ar.noise} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <div class="toggle-label">Noise Shape</div>
+      <div class="toggle-group">
+        <button class:active={noiseShape === 0} onclick={() => noiseShape = 0}>Snow</button>
+        <button class:active={noiseShape === 1} onclick={() => noiseShape = 1}>RGB</button>
+        <button class:active={noiseShape === 2} onclick={() => noiseShape = 2}>Fine</button>
+        <button class:active={noiseShape === 3} onclick={() => noiseShape = 3}>None</button>
       </div>
-    {:else}
-      <button class="save-btn" onclick={() => savingPreset = true}>Save Preset</button>
-    {/if}
-  </div>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>Tracking</summary>
+    <div class="section-body">
+      <RangeSlider label="Speed" bind:value={trackingSpeed} bind:audioMode={ar.trackingSpeed} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Intensity" bind:value={trackingIntensity} bind:audioMode={ar.trackingIntensity} min={0} max={10} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Scale" bind:value={trackingScale} bind:audioMode={ar.trackingScale} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Glitch" bind:value={trackingGlitch} bind:audioMode={ar.trackingGlitch} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Glitch Scale" bind:value={trackingGlitchScale} bind:audioMode={ar.trackingGlitchScale} min={1} max={200} step={1} formatValue={(v) => v.toFixed(0)} />
+      <label class="select-row">
+        Blend
+        <select bind:value={trackingBlend}>
+          <option value={0}>Subtract</option>
+          <option value={1}>Multiply</option>
+          <option value={2}>Add</option>
+          <option value={3}>Screen</option>
+          <option value={4}>Overlay</option>
+          <option value={5}>Dodge</option>
+          <option value={6}>Burn</option>
+        </select>
+      </label>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>Presets</summary>
+    <div class="section-body">
+      {#if presetNames.length > 0}
+        <div class="preset-list">
+          {#each presetNames as name}
+            <div class="preset-row">
+              <button class="preset-load" onclick={() => handleLoadPreset(name)}>{name}</button>
+              <button class="preset-delete" onclick={() => handleDeletePreset(name)} title="Delete">&times;</button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+      {#if savingPreset}
+        <div class="preset-save-row">
+          <input
+            class="preset-input"
+            type="text"
+            placeholder="Preset name…"
+            bind:value={presetName}
+            onkeydown={(e: KeyboardEvent) => { if (e.key === "Enter") handleSavePreset(); if (e.key === "Escape") savingPreset = false; }}
+          />
+          <button class="preset-confirm" onclick={handleSavePreset}>Save</button>
+        </div>
+      {:else}
+        <button class="save-btn" onclick={() => savingPreset = true}>Save Preset</button>
+      {/if}
+    </div>
+  </details>
 
   <div class="section">
     <button class="reset-btn" onclick={resetDefaults}>Reset to Defaults</button>
@@ -210,17 +220,74 @@
 
 <style>
   .section {
-    margin-bottom: 16px;
+    margin-bottom: 0;
+    padding-bottom: 12px;
+  }
+  details.section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px 0;
+  }
+  details.section:first-child {
+    padding-top: 0;
   }
   .section:last-child {
-    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
   }
-  h3 {
-    margin: 0 0 8px;
+  details.section > summary {
+    margin: 0;
+    padding: 4px 0;
     font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    transition: color 0.2s;
+  }
+  details.section > summary::-webkit-details-marker {
+    display: none;
+  }
+  details.section > summary::before {
+    content: "\25B8";
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.25);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
+  }
+  details.section[open] > summary {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  details.section[open] > summary::before {
+    transform: rotate(90deg);
+    color: rgba(255, 255, 255, 0.45);
+  }
+  details.section > summary:hover {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  details.section > summary:hover::before {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .section-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease;
+  }
+  details.section[open] > .section-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+  .section-body > :global(*) {
+    overflow: hidden;
+  }
+  details.section[open] > .section-body {
+    padding-top: 8px;
   }
   .toggle-label {
     font-size: 12px;
