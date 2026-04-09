@@ -65,7 +65,7 @@
     <h3>CRT Display</h3>
     <RangeSlider label="Scanline Scale" bind:value={scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Scanline Thickness" bind:value={thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Blur" bind:value={blur} min={-4.0} max={0.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Blur" bind:value={blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Mask Intensity" bind:value={mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <div class="toggle-label">Mask Type</div>
     <div class="toggle-group">

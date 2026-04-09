@@ -54,7 +54,7 @@
     gl.uniform1f(crtProgram.uniforms["u_warp"], s.warp);
     gl.uniform1f(crtProgram.uniforms["u_minVin"], s.minVin);
     gl.uniform1f(crtProgram.uniforms["u_thin"], s.thin);
-    gl.uniform1f(crtProgram.uniforms["u_blur"], s.blur);
+    gl.uniform1f(crtProgram.uniforms["u_blur"], -4.0 * (1.0 - s.blur / 10.0));
     gl.uniform1f(crtProgram.uniforms["u_mask"], s.mask);
     gl.uniform1f(crtProgram.uniforms["u_maskType"], s.maskType);
     gl.uniform1f(crtProgram.uniforms["u_time"], elapsedTime);
