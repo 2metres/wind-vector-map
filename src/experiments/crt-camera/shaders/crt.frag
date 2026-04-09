@@ -21,6 +21,7 @@ uniform float u_chromatic;    // chromatic aberration strength (default 0.0, ran
 uniform float u_noise;        // static noise amount (default 0.0, range 0-1)
 uniform float u_trackingSpeed; // tracking line scroll speed (default 0.0, range 0-5)
 uniform float u_trackingIntensity; // tracking line strength (default 0.0, range 0-1)
+uniform float u_trackingBlend;    // 0=subtract, 1=multiply, 2=add, 3=screen
 uniform float u_noiseShape;   // 0=snow, 1=glitch, 2=rgb, 3=fine
 
 varying vec2 v_uv;
@@ -314,8 +315,17 @@ void main() {
     }
   }
 
-  // Tracking line brightness
-  color -= vec3(track * u_trackingIntensity * 0.2);
+  // Tracking line blend
+  float t = track * u_trackingIntensity * 0.2;
+  if (u_trackingBlend < 0.5) {
+    color -= vec3(t);                          // subtract (darken)
+  } else if (u_trackingBlend < 1.5) {
+    color *= 1.0 - t;                          // multiply (dim)
+  } else if (u_trackingBlend < 2.5) {
+    color += vec3(t);                          // add (brighten)
+  } else {
+    color = 1.0 - (1.0 - color) * (1.0 - t);  // screen
+  }
 
   // Post-process vignette: radial gradient overlay (not affected by warp)
   if (u_minVin < 0.99) {

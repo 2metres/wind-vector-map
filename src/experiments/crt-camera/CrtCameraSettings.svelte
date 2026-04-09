@@ -14,6 +14,7 @@
   let noiseShape = $state(settingsStore.getState().noiseShape);
   let trackingSpeed = $state(settingsStore.getState().trackingSpeed);
   let trackingIntensity = $state(settingsStore.getState().trackingIntensity);
+  let trackingBlend = $state(settingsStore.getState().trackingBlend);
   let audioReactive = $state(settingsStore.getState().audioReactive);
 
   $effect(() => { settingsStore.getState().set("scale", scale); });
@@ -28,6 +29,7 @@
   $effect(() => { settingsStore.getState().set("noiseShape", noiseShape); });
   $effect(() => { settingsStore.getState().set("trackingSpeed", trackingSpeed); });
   $effect(() => { settingsStore.getState().set("trackingIntensity", trackingIntensity); });
+  $effect(() => { settingsStore.getState().set("trackingBlend", trackingBlend); });
   $effect(() => { settingsStore.getState().set("audioReactive", audioReactive); });
 
   function resetDefaults() {
@@ -44,6 +46,7 @@
     noiseShape = DEFAULTS.noiseShape;
     trackingSpeed = DEFAULTS.trackingSpeed;
     trackingIntensity = DEFAULTS.trackingIntensity;
+    trackingBlend = DEFAULTS.trackingBlend;
     audioReactive = DEFAULTS.audioReactive;
   }
 </script>
@@ -83,6 +86,13 @@
     </div>
     <RangeSlider label="Tracking Speed" bind:value={trackingSpeed} min={0} max={5} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Tracking Intensity" bind:value={trackingIntensity} min={0} max={3} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <div class="toggle-label">Tracking Blend</div>
+    <div class="toggle-group">
+      <button class:active={trackingBlend === 0} onclick={() => trackingBlend = 0}>Subtract</button>
+      <button class:active={trackingBlend === 1} onclick={() => trackingBlend = 1}>Multiply</button>
+      <button class:active={trackingBlend === 2} onclick={() => trackingBlend = 2}>Add</button>
+      <button class:active={trackingBlend === 3} onclick={() => trackingBlend = 3}>Screen</button>
+    </div>
     <label class="checkbox-row">
       <input type="checkbox" bind:checked={audioReactive} />
       Audio-Reactive Tracking
