@@ -264,9 +264,9 @@ void main() {
   );
 
   // Chromatic aberration: offset R and B channels
-  if (u_chromatic > 0.0 || track > 0.0) {
+  if (u_chromatic > 0.0) {
     float baseOffset = u_chromatic * 0.001;
-    float trackBoost = track * u_trackingIntensity * 0.005;
+    float trackBoost = track * u_trackingIntensity * u_chromatic * 0.0005;
     float offset = baseOffset + trackBoost;
     vec2 dir = uv - 0.5; // Direction from center
     float r = texture2D(u_texture, uv + dir * offset).r;
