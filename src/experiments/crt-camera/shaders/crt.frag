@@ -15,6 +15,12 @@ uniform float u_mask;         // shadow mask intensity (default 0.65)
 uniform float u_maskType;     // 0=shadow, 1=grille, 2=grille_lite, 3=none
 uniform float u_time;         // for future VHS effects
 
+// VHS effect uniforms
+uniform float u_chromatic;    // chromatic aberration strength (default 0.0, range 0-10)
+uniform float u_noise;        // static noise amount (default 0.0, range 0-1)
+uniform float u_trackingSpeed; // tracking line scroll speed (default 0.0, range 0-5)
+uniform float u_trackingIntensity; // tracking line strength (default 0.0, range 0-1)
+
 varying vec2 v_uv;
 
 float FromSrgb1(float c) {
@@ -180,10 +186,38 @@ vec3 CrtsFilter(
   return color;
 }
 
+// Pseudo-random hash for noise
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+// VHS tracking line: a bright horizontal band that scrolls vertically
+float trackingLine(vec2 uv, float time, float speed) {
+  if (speed <= 0.0) return 0.0;
+  float linePos = fract(time * speed * 0.1);
+  float dist = abs(uv.y - linePos);
+  // Main thick band
+  float line = smoothstep(0.05, 0.0, dist);
+  // Slight UV distortion near the band
+  line += smoothstep(0.1, 0.02, dist) * 0.3;
+  return line;
+}
+
 void main() {
   vec2 fragCoord = v_uv * u_resolution;
   float aspect = u_resolution.x / u_resolution.y;
   vec2 inputSize = u_resolution * u_scale;
+
+  // Apply tracking line UV distortion before sampling
+  vec2 uv = v_uv;
+  float track = trackingLine(uv, u_time, u_trackingSpeed);
+  // Shift UV horizontally near tracking line
+  uv.x += track * 0.01 * u_trackingIntensity;
+
+  // Recalculate fragCoord from potentially distorted UV
+  fragCoord = uv * u_resolution;
 
   vec3 color = CrtsFilter(
     fragCoord,
@@ -200,5 +234,25 @@ void main() {
     CrtsTone(u_thin, u_mask)
   );
 
-  gl_FragColor = vec4(ToSrgb(color), 1.0);
+  // Chromatic aberration: offset R and B channels
+  if (u_chromatic > 0.0) {
+    float offset = u_chromatic * 0.001;
+    vec2 dir = uv - 0.5; // Direction from center
+    float r = texture2D(u_texture, uv + dir * offset).r;
+    float b = texture2D(u_texture, uv - dir * offset).b;
+    // Blend chromatic aberration with CRT-filtered color
+    color.r = mix(color.r, FromSrgb1(r) * color.r / max(color.r, 0.001), 0.5);
+    color.b = mix(color.b, FromSrgb1(b) * color.b / max(color.b, 0.001), 0.5);
+  }
+
+  // Static noise
+  if (u_noise > 0.0) {
+    float n = hash(fragCoord + fract(u_time * 43.758)) * 2.0 - 1.0;
+    color += vec3(n) * u_noise * 0.15;
+  }
+
+  // Tracking line brightness
+  color += vec3(track * u_trackingIntensity * 0.2);
+
+  gl_FragColor = vec4(ToSrgb(max(color, vec3(0.0))), 1.0);
 }

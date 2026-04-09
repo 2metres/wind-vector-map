@@ -54,6 +54,10 @@
     gl.uniform1f(crtProgram.uniforms["u_mask"], 0.65);
     gl.uniform1f(crtProgram.uniforms["u_maskType"], 0.0);
     gl.uniform1f(crtProgram.uniforms["u_time"], elapsedTime);
+    gl.uniform1f(crtProgram.uniforms["u_chromatic"], 0.0);
+    gl.uniform1f(crtProgram.uniforms["u_noise"], 0.0);
+    gl.uniform1f(crtProgram.uniforms["u_trackingSpeed"], 0.0);
+    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], 0.0);
 
     drawQuad(gl, crtProgram, quadVBO);
   }
@@ -75,6 +79,7 @@
       uniforms: [
         "u_texture", "u_resolution", "u_scale", "u_warp",
         "u_minVin", "u_thin", "u_blur", "u_mask", "u_maskType", "u_time",
+        "u_chromatic", "u_noise", "u_trackingSpeed", "u_trackingIntensity",
       ],
       attributes: ["a_position"],
     });
