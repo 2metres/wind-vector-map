@@ -19,6 +19,7 @@
   let trackingSpeed = $state(settingsStore.getState().trackingSpeed);
   let trackingIntensity = $state(settingsStore.getState().trackingIntensity);
   let trackingBlend = $state(settingsStore.getState().trackingBlend);
+  let glow = $state(settingsStore.getState().glow);
   let audioReactive = $state(settingsStore.getState().audioReactive);
 
   $effect(() => { settingsStore.getState().set("scale", scale); });
@@ -38,6 +39,7 @@
   $effect(() => { settingsStore.getState().set("trackingSpeed", trackingSpeed); });
   $effect(() => { settingsStore.getState().set("trackingIntensity", trackingIntensity); });
   $effect(() => { settingsStore.getState().set("trackingBlend", trackingBlend); });
+  $effect(() => { settingsStore.getState().set("glow", glow); });
   $effect(() => { settingsStore.getState().set("audioReactive", audioReactive); });
 
   function resetDefaults() {
@@ -59,6 +61,7 @@
     trackingSpeed = DEFAULTS.trackingSpeed;
     trackingIntensity = DEFAULTS.trackingIntensity;
     trackingBlend = DEFAULTS.trackingBlend;
+    glow = DEFAULTS.glow;
     audioReactive = DEFAULTS.audioReactive;
   }
 </script>
@@ -73,6 +76,7 @@
       Anti-Moiré
     </label>
     <RangeSlider label="Blur" bind:value={blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+    <RangeSlider label="Glow" bind:value={glow} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Mask Intensity" bind:value={mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <div class="toggle-label">Mask Type</div>
     <div class="toggle-group">

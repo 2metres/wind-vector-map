@@ -27,6 +27,7 @@ uniform float u_antiMoire;    // 0=off, 1=on
 uniform float u_trackingScale;    // tracking line width (0.01-1.0)
 uniform float u_trackingGlitch; // tracking glitch intensity (0=off, 0-1)
 uniform float u_trackingGlitchScale; // number of vertical bands for glitch
+uniform float u_glow;          // phosphor glow intensity (0=off)
 
 varying vec2 v_uv;
 
@@ -355,6 +356,23 @@ void main() {
     color = min(color / max(1.0 - t, 0.001), vec3(1.0)); // 5: dodge
   } else {
     color = 1.0 - min((1.0 - color) / max(t + 0.001, 0.001), vec3(1.0)); // 6: burn
+  }
+
+  // Phosphor glow: cheap bloom via box-sampled blur added to bright areas
+  if (u_glow > 0.0) {
+    vec2 px = 1.0 / u_resolution;
+    float r = 3.0; // sample radius in pixels
+    vec3 bloom = vec3(0.0);
+    bloom += texture2D(u_texture, uv + vec2(-r, -r) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2( 0, -r) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2( r, -r) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2(-r,  0) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2( r,  0) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2(-r,  r) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2( 0,  r) * px).rgb;
+    bloom += texture2D(u_texture, uv + vec2( r,  r) * px).rgb;
+    bloom /= 8.0;
+    color += bloom * u_glow;
   }
 
   // Post-process vignette: radial gradient overlay (not affected by warp)

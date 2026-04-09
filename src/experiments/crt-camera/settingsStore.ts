@@ -18,6 +18,7 @@ export interface CrtSettings {
   trackingSpeed: number;
   trackingIntensity: number;
   trackingBlend: number;
+  glow: number;
   audioReactive: boolean;
 }
 
@@ -39,6 +40,7 @@ export const DEFAULTS: CrtSettings = {
   trackingSpeed: 2.3,
   trackingIntensity: 3,
   trackingBlend: 2,
+  glow: 0,
   audioReactive: true,
 };
 
