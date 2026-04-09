@@ -95,6 +95,9 @@
       <button class:active={trackingBlend === 1} onclick={() => trackingBlend = 1}>Multiply</button>
       <button class:active={trackingBlend === 2} onclick={() => trackingBlend = 2}>Add</button>
       <button class:active={trackingBlend === 3} onclick={() => trackingBlend = 3}>Screen</button>
+      <button class:active={trackingBlend === 4} onclick={() => trackingBlend = 4}>Overlay</button>
+      <button class:active={trackingBlend === 5} onclick={() => trackingBlend = 5}>Dodge</button>
+      <button class:active={trackingBlend === 6} onclick={() => trackingBlend = 6}>Burn</button>
     </div>
     <label class="checkbox-row">
       <input type="checkbox" bind:checked={audioReactive} />

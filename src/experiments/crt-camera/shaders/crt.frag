@@ -318,13 +318,22 @@ void main() {
   // Tracking line blend
   float t = track * u_trackingIntensity * 0.2;
   if (u_trackingBlend < 0.5) {
-    color -= vec3(t);                          // subtract (darken)
+    color -= vec3(t);                          // 0: subtract
   } else if (u_trackingBlend < 1.5) {
-    color *= 1.0 - t;                          // multiply (dim)
+    color *= 1.0 - t;                          // 1: multiply
   } else if (u_trackingBlend < 2.5) {
-    color += vec3(t);                          // add (brighten)
+    color += vec3(t);                          // 2: add
+  } else if (u_trackingBlend < 3.5) {
+    color = 1.0 - (1.0 - color) * (1.0 - t);  // 3: screen
+  } else if (u_trackingBlend < 4.5) {
+    // 4: overlay (multiply darks, screen lights)
+    vec3 lo = 2.0 * color * vec3(t);
+    vec3 hi = 1.0 - 2.0 * (1.0 - color) * (1.0 - t);
+    color = mix(lo, hi, step(0.5, color));
+  } else if (u_trackingBlend < 5.5) {
+    color = min(color / max(1.0 - t, 0.001), vec3(1.0)); // 5: dodge
   } else {
-    color = 1.0 - (1.0 - color) * (1.0 - t);  // screen
+    color = 1.0 - min((1.0 - color) / max(t + 0.001, 0.001), vec3(1.0)); // 6: burn
   }
 
   // Post-process vignette: radial gradient overlay (not affected by warp)
