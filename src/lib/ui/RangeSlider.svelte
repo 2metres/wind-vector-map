@@ -7,6 +7,7 @@
     step,
     formatValue,
     audioMode = $bindable(undefined),
+    audioMax = $bindable(undefined),
   }: {
     label: string;
     value: number;
@@ -15,15 +16,60 @@
     step: number;
     formatValue?: (v: number) => string;
     audioMode?: number;
+    audioMax?: number;
   } = $props();
 
   const display = $derived(formatValue ? formatValue(value) : String(value));
+  const dualMode = $derived(audioMode !== undefined && audioMode > 0 && audioMax !== undefined);
+
+  // Percentage positions for the highlight track
+  const minPct = $derived(((value - min) / (max - min)) * 100);
+  const maxPct = $derived(dualMode ? (((audioMax ?? value) - min) / (max - min)) * 100 : minPct);
+
+  // Ensure value <= audioMax when in dual mode
+  function onMinInput(e: Event) {
+    const v = +(e.target as HTMLInputElement).value;
+    value = v;
+    if (dualMode && audioMax !== undefined && v > audioMax) {
+      audioMax = v;
+    }
+  }
+
+  function onMaxInput(e: Event) {
+    const v = +(e.target as HTMLInputElement).value;
+    if (audioMax !== undefined) {
+      audioMax = Math.max(v, value);
+    }
+  }
 </script>
 
 <label>
   <span>{label} <code>{display}</code></span>
   <div class="slider-row">
-    <input type="range" {min} {max} {step} bind:value />
+    <div class="range-wrap" class:dual={dualMode}>
+      {#if dualMode}
+        <div
+          class="range-highlight"
+          style="left:{minPct}%;width:{maxPct - minPct}%"
+        ></div>
+      {/if}
+      <input
+        type="range"
+        {min} {max} {step}
+        value={value}
+        oninput={onMinInput}
+        class="range-min"
+      />
+      {#if dualMode}
+        <input
+          type="range"
+          {min} {max} {step}
+          value={audioMax}
+          oninput={onMaxInput}
+          class="range-max"
+        />
+      {/if}
+    </div>
     {#if audioMode !== undefined}
       <div class="audio-toggles">
         <button
@@ -94,6 +140,8 @@
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.7);
     cursor: pointer;
+    position: relative;
+    z-index: 2;
   }
 
   .slider-row {
@@ -102,9 +150,72 @@
     gap: 6px;
   }
 
-  .slider-row input[type="range"] {
+  .range-wrap {
     flex: 1;
     min-width: 0;
+    position: relative;
+    height: 14px;
+    display: flex;
+    align-items: center;
+  }
+
+  .range-wrap input[type="range"] {
+    width: 100%;
+    margin: 0;
+    position: relative;
+  }
+
+  /* Dual mode: stack both inputs */
+  .range-wrap.dual {
+    height: 14px;
+  }
+
+  .range-wrap.dual input[type="range"] {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    background: transparent;
+  }
+
+  .range-wrap.dual input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto;
+  }
+
+  .range-wrap.dual .range-min::-webkit-slider-thumb {
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 3;
+  }
+
+  .range-wrap.dual .range-max::-webkit-slider-thumb {
+    background: rgba(120, 200, 255, 0.8);
+    z-index: 2;
+  }
+
+  .range-highlight {
+    position: absolute;
+    top: 50%;
+    height: 4px;
+    transform: translateY(-50%);
+    background: rgba(120, 200, 255, 0.25);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1;
+    transition: left 0.05s, width 0.05s;
+  }
+
+  /* Track background for dual mode */
+  .range-wrap.dual::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    z-index: 0;
   }
 
   .audio-toggles {

@@ -20,6 +20,7 @@ export interface CrtSettings {
   trackingBlend: number;
   glow: number;
   audioReactive: Record<string, number>;
+  audioMax: Record<string, number>;
 }
 
 export const DEFAULTS: CrtSettings = {
@@ -47,6 +48,13 @@ export const DEFAULTS: CrtSettings = {
     chromatic: 0, noise: 0,
     trackingSpeed: 0, trackingIntensity: 1, trackingScale: 1,
     trackingGlitch: 0, trackingGlitchScale: 0,
+  },
+  audioMax: {
+    scale: 1.0, thin: 1.0, blur: 5, glow: 1, mask: 0.5,
+    warp: 32, minVin: 0.5,
+    chromatic: 30, noise: 0.5,
+    trackingSpeed: 5, trackingIntensity: 6, trackingScale: 0.2,
+    trackingGlitch: 1, trackingGlitchScale: 80,
   },
 };
 

@@ -56,7 +56,9 @@
 
     function ar(key: string, base: number): number {
       const mode = s.audioReactive[key] ?? 0;
-      return base + base * audioValue(mode);
+      if (mode === 0) return base;
+      const ceil = s.audioMax?.[key] ?? base;
+      return base + (ceil - base) * audioValue(mode);
     }
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.useProgram(crtProgram.program);

@@ -26,6 +26,11 @@
     ...DEFAULTS.audioReactive,
     ...(typeof storedAr === "object" && storedAr !== null && !Array.isArray(storedAr) ? storedAr : {}),
   });
+  const storedAm = settingsStore.getState().audioMax;
+  let am = $state<Record<string, number>>({
+    ...DEFAULTS.audioMax,
+    ...(typeof storedAm === "object" && storedAm !== null && !Array.isArray(storedAm) ? storedAm : {}),
+  });
 
   $effect(() => { settingsStore.getState().set("scale", scale); });
   $effect(() => { settingsStore.getState().set("warp", warp); });
@@ -46,6 +51,7 @@
   $effect(() => { settingsStore.getState().set("trackingBlend", trackingBlend); });
   $effect(() => { settingsStore.getState().set("glow", glow); });
   $effect(() => { settingsStore.getState().set("audioReactive", {...ar}); });
+  $effect(() => { settingsStore.getState().set("audioMax", {...am}); });
 
   function resetDefaults() {
     settingsStore.getState().resetDefaults();
@@ -68,6 +74,7 @@
     trackingBlend = DEFAULTS.trackingBlend;
     glow = DEFAULTS.glow;
     ar = {...DEFAULTS.audioReactive};
+    am = {...DEFAULTS.audioMax};
   }
 
   let presetNames = $state<string[]>(Object.keys(loadPresets()));
@@ -79,7 +86,7 @@
       scale, warp, minVin, thin, blur, mask, maskType, antiMoire,
       chromatic, noise, noiseShape, trackingScale, trackingGlitch,
       trackingGlitchScale, trackingSpeed, trackingIntensity, trackingBlend,
-      glow, audioReactive: {...ar},
+      glow, audioReactive: {...ar}, audioMax: {...am},
     };
   }
 
@@ -101,6 +108,7 @@
     trackingIntensity = s.trackingIntensity; trackingBlend = s.trackingBlend;
     glow = s.glow;
     ar = {...DEFAULTS.audioReactive, ...(s.audioReactive ?? {})};
+    am = {...DEFAULTS.audioMax, ...(s.audioMax ?? {})};
   }
 
   function handleLoadPreset(name: string) {
@@ -118,15 +126,15 @@
   <details class="section" open>
     <summary>CRT Display</summary>
     <div class="section-body">
-      <RangeSlider label="Scanline Scale" bind:value={scale} bind:audioMode={ar.scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Scanline Thickness" bind:value={thin} bind:audioMode={ar.thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Scanline Scale" bind:value={scale} bind:audioMode={ar.scale} bind:audioMax={am.scale} min={0.1} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Scanline Thickness" bind:value={thin} bind:audioMode={ar.thin} bind:audioMax={am.thin} min={0.5} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
       <label class="checkbox-row">
         <input type="checkbox" bind:checked={antiMoire} />
         Anti-Moiré
       </label>
-      <RangeSlider label="Blur" bind:value={blur} bind:audioMode={ar.blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
-      <RangeSlider label="Glow" bind:value={glow} bind:audioMode={ar.glow} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Mask Intensity" bind:value={mask} bind:audioMode={ar.mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Blur" bind:value={blur} bind:audioMode={ar.blur} bind:audioMax={am.blur} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Glow" bind:value={glow} bind:audioMode={ar.glow} bind:audioMax={am.glow} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Mask Intensity" bind:value={mask} bind:audioMode={ar.mask} bind:audioMax={am.mask} min={0.0} max={1.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
       <div class="toggle-label">Mask Type</div>
       <div class="toggle-group">
         <button class:active={maskType === 0} onclick={() => maskType = 0}>Shadow</button>
@@ -140,16 +148,16 @@
   <details class="section" open>
     <summary>Tube</summary>
     <div class="section-body">
-      <RangeSlider label="Warp" bind:value={warp} bind:audioMode={ar.warp} min={0.0} max={32.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Vignette" bind:value={minVin} bind:audioMode={ar.minVin} min={0.0} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Warp" bind:value={warp} bind:audioMode={ar.warp} bind:audioMax={am.warp} min={0.0} max={32.0} step={0.05} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Vignette" bind:value={minVin} bind:audioMode={ar.minVin} bind:audioMax={am.minVin} min={0.0} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
     </div>
   </details>
 
   <details class="section" open>
     <summary>VHS Effects</summary>
     <div class="section-body">
-      <RangeSlider label="Chromatic Aberration" bind:value={chromatic} bind:audioMode={ar.chromatic} min={0} max={100} step={0.1} formatValue={(v) => v.toFixed(1)} />
-      <RangeSlider label="Static Noise" bind:value={noise} bind:audioMode={ar.noise} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Chromatic Aberration" bind:value={chromatic} bind:audioMode={ar.chromatic} bind:audioMax={am.chromatic} min={0} max={100} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Static Noise" bind:value={noise} bind:audioMode={ar.noise} bind:audioMax={am.noise} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
       <div class="toggle-label">Noise Shape</div>
       <div class="toggle-group">
         <button class:active={noiseShape === 0} onclick={() => noiseShape = 0}>Snow</button>
@@ -163,11 +171,11 @@
   <details class="section" open>
     <summary>Tracking</summary>
     <div class="section-body">
-      <RangeSlider label="Speed" bind:value={trackingSpeed} bind:audioMode={ar.trackingSpeed} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
-      <RangeSlider label="Intensity" bind:value={trackingIntensity} bind:audioMode={ar.trackingIntensity} min={0} max={10} step={0.01} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Scale" bind:value={trackingScale} bind:audioMode={ar.trackingScale} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Glitch" bind:value={trackingGlitch} bind:audioMode={ar.trackingGlitch} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
-      <RangeSlider label="Glitch Scale" bind:value={trackingGlitchScale} bind:audioMode={ar.trackingGlitchScale} min={1} max={200} step={1} formatValue={(v) => v.toFixed(0)} />
+      <RangeSlider label="Speed" bind:value={trackingSpeed} bind:audioMode={ar.trackingSpeed} bind:audioMax={am.trackingSpeed} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+      <RangeSlider label="Intensity" bind:value={trackingIntensity} bind:audioMode={ar.trackingIntensity} bind:audioMax={am.trackingIntensity} min={0} max={10} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Scale" bind:value={trackingScale} bind:audioMode={ar.trackingScale} bind:audioMax={am.trackingScale} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Glitch" bind:value={trackingGlitch} bind:audioMode={ar.trackingGlitch} bind:audioMax={am.trackingGlitch} min={0} max={2} step={0.01} formatValue={(v) => v.toFixed(2)} />
+      <RangeSlider label="Glitch Scale" bind:value={trackingGlitchScale} bind:audioMode={ar.trackingGlitchScale} bind:audioMax={am.trackingGlitchScale} min={1} max={200} step={1} formatValue={(v) => v.toFixed(0)} />
       <label class="select-row">
         Blend
         <select bind:value={trackingBlend}>
