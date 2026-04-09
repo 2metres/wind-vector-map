@@ -27,6 +27,11 @@ export class AudioCapture {
       this.source = this.context.createMediaStreamSource(stream);
       this.source.connect(this.analyser);
 
+      // Resume AudioContext in case browser suspended it
+      if (this.context.state === "suspended") {
+        await this.context.resume();
+      }
+
       this._isActive = true;
       return true;
     } catch (e) {
