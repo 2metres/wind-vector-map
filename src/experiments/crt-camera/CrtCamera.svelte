@@ -61,12 +61,12 @@
     gl.uniform1f(crtProgram.uniforms["u_chromatic"], s.chromatic);
     gl.uniform1f(crtProgram.uniforms["u_noise"], s.noise);
     gl.uniform1f(crtProgram.uniforms["u_noiseShape"], s.noiseShape);
-    gl.uniform1f(crtProgram.uniforms["u_trackingScale"], s.trackingScale);
+    const audioLevel = (s.audioReactive && audio?.isActive) ? currentAudioLevel : 0.0;
+    gl.uniform1f(crtProgram.uniforms["u_trackingScale"], s.trackingScale + s.trackingScale * audioLevel);
     gl.uniform1f(crtProgram.uniforms["u_trackingGlitch"], s.trackingGlitch);
     gl.uniform1f(crtProgram.uniforms["u_trackingGlitchScale"], s.trackingGlitchScale);
     gl.uniform1f(crtProgram.uniforms["u_trackingSpeed"], s.trackingSpeed);
-    const audioBoost = (s.audioReactive && audio?.isActive) ? currentAudioLevel : 0.0;
-    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], s.trackingIntensity + audioBoost);
+    gl.uniform1f(crtProgram.uniforms["u_trackingIntensity"], s.trackingIntensity + audioLevel);
     gl.uniform1f(crtProgram.uniforms["u_trackingBlend"], s.trackingBlend);
 
     const video = camera.videoElement;
