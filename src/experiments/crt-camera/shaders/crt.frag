@@ -372,7 +372,7 @@ void main() {
     color -= vig * (1.0 - u_minVin);
   }
 
-  // Phosphor glow: bloom after vignette, modulated by scanlines, clipped by warpEdge
+  // Phosphor glow: bloom tinted by processed color so it inherits CRT coloring
   if (u_glow > 0.0) {
     vec2 px = 1.0 / u_resolution;
     float r = 3.0;
@@ -386,10 +386,10 @@ void main() {
     bloom += texture2D(u_texture, uv + vec2( 0,  r) * px).rgb;
     bloom += texture2D(u_texture, uv + vec2( r,  r) * px).rgb;
     bloom /= 8.0;
-    // Modulate bloom by scanline pattern so glow respects the line structure
-    float scanMod = cos(min(0.5, (pos.y - floor(pos.y)) * thin) * 6.28318) * 0.5 + 0.5;
-    bloom *= scanMod;
-    bloom *= CrtsMask(ipos, mask);
+    // Transfer processed color grading onto bloom (scanlines, mask, chromatic, tracking)
+    vec3 rawCenter = texture2D(u_texture, uv).rgb;
+    vec3 colorRatio = color / max(rawCenter, vec3(0.01));
+    bloom *= clamp(colorRatio, vec3(0.0), vec3(2.0));
     color += bloom * u_glow;
   }
 
