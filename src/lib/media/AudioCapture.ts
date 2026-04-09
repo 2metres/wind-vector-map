@@ -27,7 +27,7 @@ export class AudioCapture {
       this.context = new AudioContext();
       this.analyser = this.context.createAnalyser();
       this.analyser.fftSize = 256;
-      this.analyser.smoothingTimeConstant = 0.4;
+      this.analyser.smoothingTimeConstant = 0.15;
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
 
       this.source = this.context.createMediaStreamSource(stream);
@@ -56,12 +56,14 @@ export class AudioCapture {
 
     this.analyser.getByteFrequencyData(this.freqData);
 
-    let sum = 0;
+    // RMS level — emphasizes peaks for more reactive response
+    let sumSq = 0;
     for (let i = 0; i < this.freqData.length; i++) {
-      sum += this.freqData[i];
+      const v = this.freqData[i] / 255;
+      sumSq += v * v;
     }
-    const level = sum / (this.freqData.length * 255);
-    this._level = level;
+    const level = Math.sqrt(sumSq / this.freqData.length);
+    this._level = Math.min(1, level * 2.5); // boost to use more of 0-1 range
     const delta = Math.max(0, level - this.prevLevel);
     this.prevLevel = level;
 
