@@ -6,6 +6,8 @@ export class AudioCapture {
   private _isActive = false;
   private prevLevel = 0;
   private _level = 0;
+  private _low = 0;
+  private _high = 0;
 
   /** Rolling history of audio deltas — maps along the path */
   readonly historySize = 256;
@@ -19,6 +21,16 @@ export class AudioCapture {
   /** Current audio level (0-1), updated each frame via updateHistory() */
   get level() {
     return this._level;
+  }
+
+  /** Low frequency band level (~0-700Hz), updated each frame via updateHistory() */
+  get low() {
+    return this._low;
+  }
+
+  /** High frequency band level (~5kHz+), updated each frame via updateHistory() */
+  get high() {
+    return this._high;
   }
 
   async start(existingStream?: MediaStream): Promise<boolean> {
@@ -64,6 +76,24 @@ export class AudioCapture {
     }
     const level = Math.sqrt(sumSq / this.freqData.length);
     this._level = Math.min(1, level * 2.5); // boost to use more of 0-1 range
+
+    // Low band: bins 0-8 (~0-700Hz)
+    let lowSumSq = 0;
+    for (let i = 0; i <= 8; i++) {
+      const v = this.freqData[i] / 255;
+      lowSumSq += v * v;
+    }
+    this._low = Math.min(1, Math.sqrt(lowSumSq / 9) * 2.5);
+
+    // High band: bins 41+ (~5kHz+)
+    let highSumSq = 0;
+    const highCount = this.freqData.length - 41;
+    for (let i = 41; i < this.freqData.length; i++) {
+      const v = this.freqData[i] / 255;
+      highSumSq += v * v;
+    }
+    this._high = Math.min(1, Math.sqrt(highSumSq / highCount) * 2.5);
+
     const delta = Math.max(0, level - this.prevLevel);
     this.prevLevel = level;
 
