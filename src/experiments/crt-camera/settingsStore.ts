@@ -19,7 +19,7 @@ export interface CrtSettings {
   trackingIntensity: number;
   trackingBlend: number;
   glow: number;
-  audioReactive: boolean;
+  audioReactive: Record<string, number>;
 }
 
 export const DEFAULTS: CrtSettings = {
@@ -41,7 +41,7 @@ export const DEFAULTS: CrtSettings = {
   trackingIntensity: 3,
   trackingBlend: 2,
   glow: 0,
-  audioReactive: true,
+  audioReactive: { trackingScale: 1, trackingIntensity: 1 },
 };
 
 export const settingsStore = createPersistedStore<CrtSettings>("crt-camera:settings", DEFAULTS);
