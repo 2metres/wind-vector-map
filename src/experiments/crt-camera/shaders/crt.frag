@@ -292,7 +292,7 @@ void main() {
       // Glitch: horizontal blocky bands (height matches scanline scale)
       float bandSize = max(2.0, 16.0 * u_scale);
       float bandY = floor(nCoord.y / bandSize);
-      float bandHash = hash(vec2(bandY, floor(u_time * 12.0)));
+      float bandHash = hash(vec2(bandY, floor(u_time * u_trackingSpeed * 7.0)));
       if (bandHash > 0.7) {
         float shift = (hash(vec2(bandY, u_time)) - 0.5) * noiseAmt * 8.0;
         color = FromSrgb(texture2D(u_texture, v_uv + vec2(shift, 0.0)).rgb);
