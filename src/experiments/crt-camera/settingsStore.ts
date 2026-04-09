@@ -41,7 +41,13 @@ export const DEFAULTS: CrtSettings = {
   trackingIntensity: 3,
   trackingBlend: 2,
   glow: 0,
-  audioReactive: { trackingScale: 1, trackingIntensity: 1 },
+  audioReactive: {
+    scale: 0, thin: 0, blur: 0, glow: 0, mask: 0,
+    warp: 0, minVin: 0,
+    chromatic: 0, noise: 0,
+    trackingSpeed: 0, trackingIntensity: 1, trackingScale: 1,
+    trackingGlitch: 0, trackingGlitchScale: 0,
+  },
 };
 
 export const settingsStore = createPersistedStore<CrtSettings>("crt-camera:settings", DEFAULTS);

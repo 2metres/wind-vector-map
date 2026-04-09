@@ -20,7 +20,11 @@
   let trackingIntensity = $state(settingsStore.getState().trackingIntensity);
   let trackingBlend = $state(settingsStore.getState().trackingBlend);
   let glow = $state(settingsStore.getState().glow);
-  let ar = $state<Record<string, number>>({...settingsStore.getState().audioReactive});
+  const storedAr = settingsStore.getState().audioReactive;
+  let ar = $state<Record<string, number>>({
+    ...DEFAULTS.audioReactive,
+    ...(typeof storedAr === "object" && storedAr !== null && !Array.isArray(storedAr) ? storedAr : {}),
+  });
 
   $effect(() => { settingsStore.getState().set("scale", scale); });
   $effect(() => { settingsStore.getState().set("warp", warp); });
