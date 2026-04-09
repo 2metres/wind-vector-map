@@ -224,7 +224,8 @@ vec3 CrtsFilter(
 float trackingLine(vec2 uv, float time, float speed) {
   if (speed <= 0.0) return 0.0;
   float linePos = fract(time * speed * 0.1);
-  float dist = abs(uv.y - linePos);
+  // Wrapping distance so the band rolls smoothly across edges
+  float dist = min(abs(uv.y - linePos), 1.0 - abs(uv.y - linePos));
   float s = u_trackingScale;
   // Main thick band (scales with trackingScale)
   float line = smoothstep(s, 0.0, dist);
