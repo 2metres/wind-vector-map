@@ -381,15 +381,15 @@ void main() {
     color += bloom * u_glow;
   }
 
-  // Post-process vignette: radial gradient overlay (not affected by warp)
+  color *= warpEdge;
+
+  // Post-process vignette: subtract blend at the very end
   if (u_minVin < 0.99) {
     vec2 vigUV = v_uv * 2.0 - 1.0;
     float vigDist = length(vigUV);
-    // Soft radial falloff: center is clear, edges darken
     float vig = smoothstep(0.3, 1.4, vigDist);
-    color *= mix(1.0, 1.0 - vig, 1.0 - u_minVin);
+    color -= vig * (1.0 - u_minVin);
   }
 
-  color *= warpEdge;
   gl_FragColor = vec4(ToSrgb(max(color, vec3(0.0))), 1.0);
 }
