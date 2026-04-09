@@ -12,7 +12,7 @@
   let panelOpen = $state(false);
   let camera: CameraCapture;
   let audio: AudioCapture;
-  let currentAudioLevel = 1.0;
+  let currentAudioLevel = 0.0;
   let canvas: HTMLCanvasElement;
   let gl: WebGLRenderingContext;
   let cameraTexture: WebGLTexture | null = null;
@@ -135,13 +135,22 @@
 
   async function enableCamera() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: { facingMode: "user", width: 640, height: 480 },
-      });
+      // Try with audio+video first; fall back to video-only if mic denied
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: { facingMode: "user", width: 640, height: 480 },
+        });
+        audio = new AudioCapture();
+        await audio.start(stream);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: 640, height: 480 },
+        });
+        console.warn("Mic access denied — audio-reactive tracking unavailable");
+      }
       await camera.start(stream);
-      audio = new AudioCapture();
-      await audio.start(stream);
     } catch (e) {
       console.warn("Camera access denied:", e);
     }
