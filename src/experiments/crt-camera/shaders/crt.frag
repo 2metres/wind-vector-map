@@ -315,7 +315,7 @@ void main() {
   }
 
   // Tracking line brightness
-  color += vec3(track * u_trackingIntensity * 0.2);
+  color -= vec3(track * u_trackingIntensity * 0.2);
 
   // Post-process vignette: radial gradient overlay (not affected by warp)
   if (u_minVin < 0.99) {
