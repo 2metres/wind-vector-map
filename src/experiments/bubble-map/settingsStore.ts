@@ -49,7 +49,7 @@ export const DEFAULTS: Settings = {
   thickness: 0.15,
   densityScale: 0.3,
   softness: 0.85,
-  absorption: 2.5,
+  absorption: 4.0,
   colorHue: 0.55,
   colorSat: 0.6,
   colorVal: 0.95,
@@ -65,4 +65,4 @@ export const DEFAULTS: Settings = {
   lightAngleY: 0.8,
 };
 
-export const settingsStore = createPersistedStore<Settings>("bubble-map:settings", DEFAULTS, 2);
+export const settingsStore = createPersistedStore<Settings>("bubble-map:settings", DEFAULTS, 3);

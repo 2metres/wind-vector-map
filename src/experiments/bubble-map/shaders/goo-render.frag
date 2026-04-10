@@ -113,11 +113,10 @@ void main() {
 
   // === Beer's Law through the background ===
   vec3 fluidColor = hsv2rgb(hue, sat, val);
-  // Absorption coefficient: fluid color determines which wavelengths pass through
-  // Use the color's complement scaled by absorption strength
-  vec3 absorbCoeff = (vec3(1.0) - fluidColor) * u_absorption + vec3(u_absorption * 0.15);
-  vec3 transmittance = exp(-absorbCoeff * thickness);
-  vec3 refractionColor = bgColor * transmittance;
+  float opDepth = u_absorption * thickness;
+  float t = exp(-opDepth);                       // overall transparency
+  // Thin = see-through tinted background, thick = saturated fluid color
+  vec3 refractionColor = bgColor * t + fluidColor * (1.0 - t);
 
   // === Schlick Fresnel ===
   float fresnel = u_fresnelF0 + (1.0 - u_fresnelF0) * pow(1.0 - NdotV, 5.0);
@@ -130,17 +129,10 @@ void main() {
   float spec = pow(NdotH, u_shininess);
   float spec2 = pow(NdotH, u_shininess * 0.15) * 0.12;
 
-  // === Subsurface scattering ===
-  float sssThickness = 1.0 / (1.0 + thickness * 2.0);
-  vec3 sssColor = fluidColor * sssThickness * 0.4;
-  float backlit = max(dot(normal, -L), 0.0);
-  sssColor += fluidColor * backlit * sssThickness * 0.2;
-
   // === Composite ===
   vec3 color = mix(refractionColor, reflectionColor, fresnel);
-  color += sssColor;
+  color += fluidColor * (1.0 - t) * NdotL * 0.3; // diffuse tint in thick areas
   color += vec3(1.0) * (spec * u_specStrength + spec2);
-  color += fluidColor * NdotL * 0.06;
 
   // Always fully opaque — transparency is handled by Beer's law showing the room through
   gl_FragColor = vec4(color, u_opacity);

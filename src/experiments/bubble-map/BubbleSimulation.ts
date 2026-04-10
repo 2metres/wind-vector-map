@@ -63,7 +63,7 @@ export class BubbleSimulation {
     thickness: 0.15,
     densityScale: 0.3,
     softness: 0.85,
-    absorption: 2.5,
+    absorption: 4.0,
     colorHue: 0.55,
     colorSat: 0.6,
     colorVal: 0.95,
