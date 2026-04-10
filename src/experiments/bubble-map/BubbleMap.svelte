@@ -16,9 +16,9 @@
   const settingsKeys: (keyof Settings)[] = [
     "growthRate", "maxRadius", "brushRadius",
     "physicsMode", "gravity", "viscosity",
-    "thickness", "densityScale", "softness", "depthScale",
-    "opacity", "colorHue", "colorSat", "colorVal", "useBaseColor",
-    "shininess", "ambient", "specStrength", "rimPower", "rimStrength",
+    "thickness", "densityScale", "softness", "absorption",
+    "colorHue", "colorSat", "colorVal", "useBaseColor", "opacity",
+    "depthScale", "shininess", "specStrength", "fresnelF0", "envBright",
     "lightAngleX", "lightAngleY",
   ];
 

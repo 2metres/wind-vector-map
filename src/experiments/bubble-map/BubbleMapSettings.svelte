@@ -11,17 +11,17 @@
   let thickness = $state(settingsStore.getState().thickness);
   let densityScale = $state(settingsStore.getState().densityScale);
   let softness = $state(settingsStore.getState().softness);
-  let depthScale = $state(settingsStore.getState().depthScale);
-  let opacity = $state(settingsStore.getState().opacity);
+  let absorption = $state(settingsStore.getState().absorption);
   let colorHue = $state(settingsStore.getState().colorHue);
   let colorSat = $state(settingsStore.getState().colorSat);
   let colorVal = $state(settingsStore.getState().colorVal);
   let useBaseColor = $state(settingsStore.getState().useBaseColor);
+  let opacity = $state(settingsStore.getState().opacity);
+  let depthScale = $state(settingsStore.getState().depthScale);
   let shininess = $state(settingsStore.getState().shininess);
-  let ambient = $state(settingsStore.getState().ambient);
   let specStrength = $state(settingsStore.getState().specStrength);
-  let rimPower = $state(settingsStore.getState().rimPower);
-  let rimStrength = $state(settingsStore.getState().rimStrength);
+  let fresnelF0 = $state(settingsStore.getState().fresnelF0);
+  let envBright = $state(settingsStore.getState().envBright);
   let lightAngleX = $state(settingsStore.getState().lightAngleX);
   let lightAngleY = $state(settingsStore.getState().lightAngleY);
 
@@ -34,17 +34,17 @@
   $effect(() => { settingsStore.getState().set("thickness", thickness); });
   $effect(() => { settingsStore.getState().set("densityScale", densityScale); });
   $effect(() => { settingsStore.getState().set("softness", softness); });
-  $effect(() => { settingsStore.getState().set("depthScale", depthScale); });
-  $effect(() => { settingsStore.getState().set("opacity", opacity); });
+  $effect(() => { settingsStore.getState().set("absorption", absorption); });
   $effect(() => { settingsStore.getState().set("colorHue", colorHue); });
   $effect(() => { settingsStore.getState().set("colorSat", colorSat); });
   $effect(() => { settingsStore.getState().set("colorVal", colorVal); });
   $effect(() => { settingsStore.getState().set("useBaseColor", useBaseColor); });
+  $effect(() => { settingsStore.getState().set("opacity", opacity); });
+  $effect(() => { settingsStore.getState().set("depthScale", depthScale); });
   $effect(() => { settingsStore.getState().set("shininess", shininess); });
-  $effect(() => { settingsStore.getState().set("ambient", ambient); });
   $effect(() => { settingsStore.getState().set("specStrength", specStrength); });
-  $effect(() => { settingsStore.getState().set("rimPower", rimPower); });
-  $effect(() => { settingsStore.getState().set("rimStrength", rimStrength); });
+  $effect(() => { settingsStore.getState().set("fresnelF0", fresnelF0); });
+  $effect(() => { settingsStore.getState().set("envBright", envBright); });
   $effect(() => { settingsStore.getState().set("lightAngleX", lightAngleX); });
   $effect(() => { settingsStore.getState().set("lightAngleY", lightAngleY); });
 
@@ -59,17 +59,17 @@
     thickness = DEFAULTS.thickness;
     densityScale = DEFAULTS.densityScale;
     softness = DEFAULTS.softness;
-    depthScale = DEFAULTS.depthScale;
-    opacity = DEFAULTS.opacity;
+    absorption = DEFAULTS.absorption;
     colorHue = DEFAULTS.colorHue;
     colorSat = DEFAULTS.colorSat;
     colorVal = DEFAULTS.colorVal;
     useBaseColor = DEFAULTS.useBaseColor;
+    opacity = DEFAULTS.opacity;
+    depthScale = DEFAULTS.depthScale;
     shininess = DEFAULTS.shininess;
-    ambient = DEFAULTS.ambient;
     specStrength = DEFAULTS.specStrength;
-    rimPower = DEFAULTS.rimPower;
-    rimStrength = DEFAULTS.rimStrength;
+    fresnelF0 = DEFAULTS.fresnelF0;
+    envBright = DEFAULTS.envBright;
     lightAngleX = DEFAULTS.lightAngleX;
     lightAngleY = DEFAULTS.lightAngleY;
   }
@@ -97,13 +97,17 @@
   </div>
 
   <div class="section">
-    <h3>Appearance</h3>
-    <RangeSlider label="Thickness" bind:value={thickness} min={0.01} max={0.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Density" bind:value={densityScale} min={0.02} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <h3>Fluid</h3>
+    <RangeSlider label="Threshold" bind:value={thickness} min={0.005} max={0.2} step={0.005} formatValue={(v) => v.toFixed(3)} />
+    <RangeSlider label="Density" bind:value={densityScale} min={0.01} max={0.5} step={0.005} formatValue={(v) => v.toFixed(3)} />
     <RangeSlider label="Softness" bind:value={softness} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Depth" bind:value={depthScale} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
+    <RangeSlider label="Absorption" bind:value={absorption} min={0} max={15} step={0.5} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Opacity" bind:value={opacity} min={0.05} max={1} step={0.05} formatValue={(v) => v.toFixed(2)} />
-    <SelectInput label="Color" bind:value={useBaseColor}>
+  </div>
+
+  <div class="section">
+    <h3>Color</h3>
+    <SelectInput label="Mode" bind:value={useBaseColor}>
       <option value={0}>Per-stroke</option>
       <option value={1}>Uniform</option>
     </SelectInput>
@@ -116,13 +120,13 @@
 
   <div class="section">
     <h3>Lighting</h3>
-    <RangeSlider label="Shininess" bind:value={shininess} min={1} max={128} step={1} />
-    <RangeSlider label="Specular" bind:value={specStrength} min={0} max={2} step={0.05} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Ambient" bind:value={ambient} min={0} max={1} step={0.05} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Depth" bind:value={depthScale} min={1} max={20} step={0.5} formatValue={(v) => v.toFixed(1)} />
+    <RangeSlider label="Shininess" bind:value={shininess} min={10} max={500} step={10} />
+    <RangeSlider label="Specular" bind:value={specStrength} min={0} max={3} step={0.1} formatValue={(v) => v.toFixed(1)} />
+    <RangeSlider label="Fresnel F0" bind:value={fresnelF0} min={0.01} max={0.3} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Environment" bind:value={envBright} min={0} max={2} step={0.05} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Light X" bind:value={lightAngleX} min={-1.5} max={1.5} step={0.05} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Light Y" bind:value={lightAngleY} min={-1.5} max={1.5} step={0.05} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Rim Power" bind:value={rimPower} min={0.5} max={8} step={0.1} formatValue={(v) => v.toFixed(1)} />
-    <RangeSlider label="Rim Strength" bind:value={rimStrength} min={0} max={2} step={0.05} formatValue={(v) => v.toFixed(2)} />
   </div>
 
   <div class="section">

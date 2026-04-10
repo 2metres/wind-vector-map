@@ -25,17 +25,17 @@ export interface BubbleSettings {
   thickness: number;
   densityScale: number;
   softness: number;
-  depthScale: number;
-  opacity: number;
+  absorption: number;
   colorHue: number;
   colorSat: number;
   colorVal: number;
   useBaseColor: number;
+  opacity: number;
+  depthScale: number;
   shininess: number;
-  ambient: number;
   specStrength: number;
-  rimPower: number;
-  rimStrength: number;
+  fresnelF0: number;
+  envBright: number;
   lightAngleX: number;
   lightAngleY: number;
 }
@@ -52,20 +52,20 @@ export class BubbleSimulation {
     physicsMode: 0,
     gravity: 15,
     viscosity: 0.3,
-    thickness: 0.04,
-    densityScale: 0.06,
-    softness: 0.8,
-    depthScale: 6.0,
-    opacity: 1.0,
+    thickness: 0.03,
+    densityScale: 0.05,
+    softness: 0.85,
+    absorption: 4.0,
     colorHue: 0.55,
     colorSat: 0.7,
     colorVal: 0.9,
     useBaseColor: 0,
-    shininess: 64,
-    ambient: 0.15,
-    specStrength: 1.2,
-    rimPower: 2.5,
-    rimStrength: 0.8,
+    opacity: 1.0,
+    depthScale: 8.0,
+    shininess: 200,
+    specStrength: 1.5,
+    fresnelF0: 0.04,
+    envBright: 0.6,
     lightAngleX: 0.5,
     lightAngleY: 0.8,
   };
@@ -107,10 +107,9 @@ export class BubbleSimulation {
     this.gooProgram = createProgram(gl, gooRenderVert, gooRenderFrag, {
       uniforms: [
         "u_density", "u_resolution", "u_threshold", "u_shininess",
-        "u_lightDir", "u_ambient", "u_specStrength",
-        "u_rimPower", "u_rimStrength",
+        "u_lightDir", "u_specStrength",
         "u_opacity", "u_baseHue", "u_baseSat", "u_baseVal", "u_useBaseColor",
-        "u_depthScale",
+        "u_depthScale", "u_absorption", "u_fresnelF0", "u_envBright",
       ],
       attributes: ["a_position"],
     });
@@ -218,7 +217,6 @@ export class BubbleSimulation {
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.useProgram(this.densityProgram.program);
 
-    // Density uniforms
     gl.uniform1f(this.densityProgram.uniforms["u_densityScale"]!, s.densityScale);
     gl.uniform1f(this.densityProgram.uniforms["u_softness"]!, s.softness);
 
@@ -259,16 +257,16 @@ export class BubbleSimulation {
     gl.uniform2f(u["u_resolution"]!, this.width, this.height);
     gl.uniform1f(u["u_threshold"]!, s.thickness);
     gl.uniform1f(u["u_shininess"]!, s.shininess);
-    gl.uniform1f(u["u_ambient"]!, s.ambient);
     gl.uniform1f(u["u_specStrength"]!, s.specStrength);
-    gl.uniform1f(u["u_rimPower"]!, s.rimPower);
-    gl.uniform1f(u["u_rimStrength"]!, s.rimStrength);
     gl.uniform1f(u["u_opacity"]!, s.opacity);
     gl.uniform1f(u["u_baseHue"]!, s.colorHue);
     gl.uniform1f(u["u_baseSat"]!, s.colorSat);
     gl.uniform1f(u["u_baseVal"]!, s.colorVal);
     gl.uniform1f(u["u_useBaseColor"]!, s.useBaseColor);
     gl.uniform1f(u["u_depthScale"]!, s.depthScale);
+    gl.uniform1f(u["u_absorption"]!, s.absorption);
+    gl.uniform1f(u["u_fresnelF0"]!, s.fresnelF0);
+    gl.uniform1f(u["u_envBright"]!, s.envBright);
 
     const lx = Math.sin(s.lightAngleX) * Math.cos(s.lightAngleY);
     const ly = Math.sin(s.lightAngleY);
