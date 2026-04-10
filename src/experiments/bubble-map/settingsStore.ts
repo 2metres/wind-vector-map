@@ -65,4 +65,4 @@ export const DEFAULTS: Settings = {
   lightAngleY: 0.8,
 };
 
-export const settingsStore = createPersistedStore<Settings>("bubble-map:settings", DEFAULTS);
+export const settingsStore = createPersistedStore<Settings>("bubble-map:settings", DEFAULTS, 1);

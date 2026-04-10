@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 export function createPersistedStore<T extends object>(
   key: string,
   defaults: T,
+  version = 0,
 ) {
   type Store = T & {
     set: <K extends keyof T>(key: K, value: T[K]) => void;
@@ -17,7 +18,11 @@ export function createPersistedStore<T extends object>(
         set: (k, value) => set({ [k]: value } as unknown as Partial<Store>),
         resetDefaults: () => set(defaults as unknown as Partial<Store>),
       }),
-      { name: key },
+      {
+        name: key,
+        version,
+        migrate: () => defaults,
+      },
     ),
   );
 }
