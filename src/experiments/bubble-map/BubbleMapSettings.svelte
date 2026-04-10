@@ -118,10 +118,10 @@
 
   <div class="section">
     <h3>Fluid</h3>
-    <RangeSlider label="Threshold" bind:value={thickness} min={0.002} max={0.2} step={0.002} formatValue={(v) => v.toFixed(3)} />
-    <RangeSlider label="Density" bind:value={densityScale} min={0.005} max={0.5} step={0.005} formatValue={(v) => v.toFixed(3)} />
+    <RangeSlider label="Threshold" bind:value={thickness} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Density" bind:value={densityScale} min={0.01} max={2.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
     <RangeSlider label="Softness" bind:value={softness} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
-    <RangeSlider label="Absorption" bind:value={absorption} min={0} max={15} step={0.5} formatValue={(v) => v.toFixed(1)} />
+    <RangeSlider label="Absorption" bind:value={absorption} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Opacity" bind:value={opacity} min={0.05} max={1} step={0.05} formatValue={(v) => v.toFixed(2)} />
   </div>
 

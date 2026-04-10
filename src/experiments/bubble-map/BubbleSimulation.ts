@@ -7,7 +7,6 @@ import {
 import { BubbleGrid } from "./BubbleGrid";
 import {
   createProgram,
-  createFBO,
   createQuadVBO,
   drawQuad,
   getWebGLContext,
@@ -101,7 +100,27 @@ export class BubbleSimulation {
     this.canvas = canvas;
     this.gl = getWebGLContext(canvas, { premultipliedAlpha: false, alpha: true });
     this.ext = getExtension<ANGLE_instanced_arrays>(this.gl, "ANGLE_instanced_arrays");
+    // Float textures for unclamped density accumulation
+    this.gl.getExtension("OES_texture_float");
+    this.gl.getExtension("OES_texture_float_linear");
     this.initGL();
+  }
+
+  /** Create a float RGBA FBO — density can accumulate past 1.0 */
+  private createFloatFBO(width: number, height: number): FBOHandle {
+    const gl = this.gl;
+    const texture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const fbo = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { fbo, texture };
   }
 
   private initGL() {
@@ -124,7 +143,7 @@ export class BubbleSimulation {
 
     this.quadVBO = createQuadVBO(gl);
     this.instanceVBO = gl.createBuffer()!;
-    this.densityFBO = createFBO(gl, this.canvas.width || 512, this.canvas.height || 512);
+    this.densityFBO = this.createFloatFBO(this.canvas.width || 512, this.canvas.height || 512);
   }
 
   resize(width: number, height: number) {
@@ -139,7 +158,7 @@ export class BubbleSimulation {
       gl.deleteFramebuffer(this.densityFBO.fbo);
       gl.deleteTexture(this.densityFBO.texture);
     }
-    this.densityFBO = createFBO(gl, width, height);
+    this.densityFBO = this.createFloatFBO(width, height);
   }
 
   setAudioLevel(level: number) {

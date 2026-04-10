@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 uniform float u_densityScale;    // per-bubble contribution (lower = more stacking depth)
 uniform float u_softness;        // 0=sharp bubbles, 1=soft clouds
