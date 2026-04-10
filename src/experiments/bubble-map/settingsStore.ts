@@ -1,15 +1,27 @@
 import { createPersistedStore } from "../../lib/stores";
 
 export interface Settings {
+  // Bubbles
   growthRate: number;
   maxRadius: number;
-  threshold: number;
+  brushRadius: number;
+  // Physics
+  physicsMode: number;  // 0=static, 1=float, 2=drip
+  gravity: number;
+  viscosity: number;
+  // Appearance
+  thickness: number;    // maps to density threshold
+  opacity: number;
+  colorHue: number;
+  colorSat: number;
+  colorVal: number;
+  useBaseColor: number; // 0=per-stroke hue, 1=base color
+  // Lighting
   shininess: number;
   ambient: number;
   specStrength: number;
   rimPower: number;
   rimStrength: number;
-  brushRadius: number;
   lightAngleX: number;
   lightAngleY: number;
 }
@@ -17,13 +29,21 @@ export interface Settings {
 export const DEFAULTS: Settings = {
   growthRate: 2.0,
   maxRadius: 3.0,
-  threshold: 0.12,
+  brushRadius: 3,
+  physicsMode: 0,
+  gravity: 15,
+  viscosity: 0.3,
+  thickness: 0.12,
+  opacity: 1.0,
+  colorHue: 0.55,
+  colorSat: 0.7,
+  colorVal: 0.9,
+  useBaseColor: 0,
   shininess: 32,
   ambient: 0.25,
   specStrength: 0.6,
   rimPower: 3.0,
   rimStrength: 0.4,
-  brushRadius: 3,
   lightAngleX: 0.4,
   lightAngleY: 0.6,
 };

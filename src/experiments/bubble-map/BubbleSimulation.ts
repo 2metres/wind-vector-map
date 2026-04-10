@@ -18,13 +18,21 @@ import type { FBOHandle, ShaderProgram } from "../../lib/gl";
 export interface BubbleSettings {
   growthRate: number;
   maxRadius: number;
-  threshold: number;
+  brushRadius: number;
+  physicsMode: number;
+  gravity: number;
+  viscosity: number;
+  thickness: number;
+  opacity: number;
+  colorHue: number;
+  colorSat: number;
+  colorVal: number;
+  useBaseColor: number;
   shininess: number;
   ambient: number;
   specStrength: number;
   rimPower: number;
   rimStrength: number;
-  brushRadius: number;
   lightAngleX: number;
   lightAngleY: number;
 }
@@ -37,45 +45,42 @@ export class BubbleSimulation {
   settings: BubbleSettings = {
     growthRate: 2.0,
     maxRadius: 3.0,
-    threshold: 0.12,
+    brushRadius: 3,
+    physicsMode: 0,
+    gravity: 15,
+    viscosity: 0.3,
+    thickness: 0.12,
+    opacity: 1.0,
+    colorHue: 0.55,
+    colorSat: 0.7,
+    colorVal: 0.9,
+    useBaseColor: 0,
     shininess: 32,
     ambient: 0.25,
     specStrength: 0.6,
     rimPower: 3.0,
     rimStrength: 0.4,
-    brushRadius: 3,
     lightAngleX: 0.4,
     lightAngleY: 0.6,
   };
 
-  // Programs
   private densityProgram!: ShaderProgram;
   private gooProgram!: ShaderProgram;
-
-  // Buffers
   private quadVBO!: WebGLBuffer;
   private instanceVBO!: WebGLBuffer;
-
-  // FBO
   private densityFBO!: FBOHandle;
 
-  // Grid
   private grid = new BubbleGrid();
   private fieldSize = 256;
-  private cellSize = 1; // pixels per grid cell, computed on resize
-
-  // Canvas dimensions
+  private cellSize = 1;
   private width = 1;
   private height = 1;
 
-  // Mouse state
   private prevGridCol = -1;
   private prevGridRow = -1;
   private prevDirX = 0;
   private prevDirY = 0;
   private strokeHasDirection = false;
-
-  // Audio
   private audioLevel = 0;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -88,29 +93,23 @@ export class BubbleSimulation {
   private initGL() {
     const gl = this.gl;
 
-    // Density pass: instanced bubbles → additive blend into FBO
     this.densityProgram = createProgram(gl, bubbleDensityVert, bubbleDensityFrag, {
       uniforms: [],
       attributes: ["a_position", "a_instance"],
     });
 
-    // Goo render: fullscreen quad reads density texture
     this.gooProgram = createProgram(gl, gooRenderVert, gooRenderFrag, {
       uniforms: [
         "u_density", "u_resolution", "u_threshold", "u_shininess",
         "u_lightDir", "u_ambient", "u_specStrength",
         "u_rimPower", "u_rimStrength",
+        "u_opacity", "u_baseHue", "u_baseSat", "u_baseVal", "u_useBaseColor",
       ],
       attributes: ["a_position"],
     });
 
-    // Quad VBO (unit quad for fullscreen pass)
     this.quadVBO = createQuadVBO(gl);
-
-    // Instance VBO (dynamic, updated each frame)
     this.instanceVBO = gl.createBuffer()!;
-
-    // Density FBO
     this.densityFBO = createFBO(gl, this.canvas.width || 512, this.canvas.height || 512);
   }
 
@@ -120,11 +119,8 @@ export class BubbleSimulation {
     this.height = height;
     this.canvas.width = width;
     this.canvas.height = height;
-
-    // Compute cell size: map 256 grid cells across the larger dimension
     this.cellSize = Math.max(width, height) / this.fieldSize;
 
-    // Recreate density FBO at canvas resolution
     if (this.densityFBO) {
       gl.deleteFramebuffer(this.densityFBO.fbo);
       gl.deleteTexture(this.densityFBO.texture);
@@ -140,15 +136,13 @@ export class BubbleSimulation {
     this.prevGridCol = -1;
     this.prevGridRow = -1;
     this.strokeHasDirection = false;
-    this.grid.rotateHue(0.15); // shift hue per stroke
+    this.grid.rotateHue(0.15);
   }
 
   onMouseMove(clientX: number, clientY: number) {
     const rect = this.canvas.getBoundingClientRect();
     const px = clientX - rect.left;
     const py = clientY - rect.top;
-
-    // Convert to grid coords
     const col = px / this.cellSize;
     const row = py / this.cellSize;
 
@@ -163,10 +157,8 @@ export class BubbleSimulation {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist > 0.5) {
-      const dirX = dx / dist;
-      const dirY = dy / dist;
-      this.prevDirX = dirX;
-      this.prevDirY = dirY;
+      this.prevDirX = dx / dist;
+      this.prevDirY = dy / dist;
       this.strokeHasDirection = true;
     }
 
@@ -192,94 +184,87 @@ export class BubbleSimulation {
     const gl = this.gl;
     const s = this.settings;
 
-    // Grow bubbles
-    this.grid.tick(dt, s.growthRate, s.maxRadius, this.audioLevel);
+    this.grid.tick(
+      dt, s.growthRate, s.maxRadius, this.audioLevel,
+      s.physicsMode, s.gravity, s.viscosity, this.fieldSize,
+    );
 
     if (this.grid.cellCount === 0) {
-      // Nothing to draw — clear screen
       gl.viewport(0, 0, this.width, this.height);
       gl.clearColor(0.02, 0.02, 0.05, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       return;
     }
 
-    // Pack instance data
     const instanceData = this.grid.packInstances(this.width, this.height, this.cellSize);
 
-    // Upload instance data
     gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceVBO);
     gl.bufferData(gl.ARRAY_BUFFER, instanceData, gl.DYNAMIC_DRAW);
 
-    // === Pass 1: Render bubble density to FBO ===
+    // === Pass 1: Density FBO ===
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.densityFBO.fbo);
     gl.viewport(0, 0, this.width, this.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // Additive blending
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE);
-
     gl.useProgram(this.densityProgram.program);
 
-    // Quad vertices (unit quad, reused per instance)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVBO);
     const aPos = this.densityProgram.attributes["a_position"];
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
     this.ext.vertexAttribDivisorANGLE(aPos, 0);
 
-    // Instance data
     gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceVBO);
     const aInst = this.densityProgram.attributes["a_instance"];
     gl.enableVertexAttribArray(aInst);
     gl.vertexAttribPointer(aInst, 4, gl.FLOAT, false, 0, 0);
     this.ext.vertexAttribDivisorANGLE(aInst, 1);
 
-    // Draw instanced quads (6 verts per quad)
     const bubbleCount = instanceData.length / 4;
     this.ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 6, bubbleCount);
 
-    // Reset divisors
     this.ext.vertexAttribDivisorANGLE(aPos, 0);
     this.ext.vertexAttribDivisorANGLE(aInst, 0);
-
     gl.disable(gl.BLEND);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    // === Pass 2: Render goo with 3D lighting ===
+    // === Pass 2: Goo render ===
     gl.viewport(0, 0, this.width, this.height);
     gl.clearColor(0.02, 0.02, 0.05, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
     gl.useProgram(this.gooProgram.program);
 
-    // Bind density texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.densityFBO.texture);
     gl.uniform1i(this.gooProgram.uniforms["u_density"]!, 0);
 
-    // Uniforms
-    gl.uniform2f(this.gooProgram.uniforms["u_resolution"]!, this.width, this.height);
-    gl.uniform1f(this.gooProgram.uniforms["u_threshold"]!, s.threshold);
-    gl.uniform1f(this.gooProgram.uniforms["u_shininess"]!, s.shininess);
-    gl.uniform1f(this.gooProgram.uniforms["u_ambient"]!, s.ambient);
-    gl.uniform1f(this.gooProgram.uniforms["u_specStrength"]!, s.specStrength);
-    gl.uniform1f(this.gooProgram.uniforms["u_rimPower"]!, s.rimPower);
-    gl.uniform1f(this.gooProgram.uniforms["u_rimStrength"]!, s.rimStrength);
+    const u = this.gooProgram.uniforms;
+    gl.uniform2f(u["u_resolution"]!, this.width, this.height);
+    gl.uniform1f(u["u_threshold"]!, s.thickness);
+    gl.uniform1f(u["u_shininess"]!, s.shininess);
+    gl.uniform1f(u["u_ambient"]!, s.ambient);
+    gl.uniform1f(u["u_specStrength"]!, s.specStrength);
+    gl.uniform1f(u["u_rimPower"]!, s.rimPower);
+    gl.uniform1f(u["u_rimStrength"]!, s.rimStrength);
+    gl.uniform1f(u["u_opacity"]!, s.opacity);
+    gl.uniform1f(u["u_baseHue"]!, s.colorHue);
+    gl.uniform1f(u["u_baseSat"]!, s.colorSat);
+    gl.uniform1f(u["u_baseVal"]!, s.colorVal);
+    gl.uniform1f(u["u_useBaseColor"]!, s.useBaseColor);
 
-    // Light direction from angles
     const lx = Math.sin(s.lightAngleX) * Math.cos(s.lightAngleY);
     const ly = Math.sin(s.lightAngleY);
     const lz = Math.cos(s.lightAngleX) * Math.cos(s.lightAngleY);
     const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
-    gl.uniform3f(this.gooProgram.uniforms["u_lightDir"]!, lx / len, ly / len, lz / len);
+    gl.uniform3f(u["u_lightDir"]!, lx / len, ly / len, lz / len);
 
     drawQuad(gl, this.gooProgram, this.quadVBO);
-
     gl.disable(gl.BLEND);
   }
 

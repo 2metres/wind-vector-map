@@ -1,23 +1,29 @@
+export const PHYSICS_STATIC = 0;
+export const PHYSICS_FLOAT = 1;
+export const PHYSICS_DRIP = 2;
+
 export interface BubbleCell {
-  col: number;
-  row: number;
+  x: number;       // position in grid units (float)
+  y: number;
+  vx: number;      // velocity in grid units/sec
+  vy: number;
   radius: number;
   age: number;
   hue: number;
-  dirX: number;
-  dirY: number;
 }
 
 export class BubbleGrid {
-  private cells = new Map<number, BubbleCell>();
+  private cells: BubbleCell[] = [];
+  private armed = new Set<number>(); // grid keys already spawned
   private currentHue = 0;
 
   get cellCount(): number {
-    return this.cells.size;
+    return this.cells.length;
   }
 
   clear() {
-    this.cells.clear();
+    this.cells.length = 0;
+    this.armed.clear();
     this.currentHue = 0;
   }
 
@@ -26,15 +32,22 @@ export class BubbleGrid {
     col = Math.max(0, Math.min(255, col | 0));
     row = Math.max(0, Math.min(255, row | 0));
     const key = row * 256 + col;
-    if (this.cells.has(key)) return false;
-    // Hue from draw direction angle, rotated by currentHue offset
+    if (this.armed.has(key)) return false;
+    this.armed.add(key);
     const angle = Math.atan2(dirY, dirX);
     const hue = ((angle + Math.PI) / (2 * Math.PI) + this.currentHue) % 1;
-    this.cells.set(key, { col, row, radius: 0.01, age: 0, hue, dirX, dirY });
+    this.cells.push({
+      x: col + 0.5,
+      y: row + 0.5,
+      vx: dirX * 2,  // initial velocity from stroke direction
+      vy: dirY * 2,
+      radius: 0.01,
+      age: 0,
+      hue,
+    });
     return true;
   }
 
-  /** Arm a disc of cells around a center point */
   private armDisc(cx: number, cy: number, r: number, dirX: number, dirY: number) {
     const ri = Math.ceil(r);
     const r2 = r * r;
@@ -49,7 +62,6 @@ export class BubbleGrid {
     }
   }
 
-  /** Bresenham line with brush radius */
   armLine(
     fromCol: number, fromRow: number,
     toCol: number, toRow: number,
@@ -76,43 +88,77 @@ export class BubbleGrid {
     }
   }
 
-  /** Shift the hue offset for new strokes */
   rotateHue(amount: number) {
     this.currentHue = (this.currentHue + amount) % 1;
   }
 
-  /** Grow all bubbles; returns number of active bubbles */
-  tick(dt: number, growthRate: number, maxRadius: number, audioLevel: number): number {
+  /** Update physics and growth. Returns number of active bubbles. */
+  tick(
+    dt: number,
+    growthRate: number,
+    maxRadius: number,
+    audioLevel: number,
+    physicsMode: number,
+    gravity: number,
+    viscosity: number,
+    fieldSize: number,
+  ): number {
     const boost = 1 + audioLevel * 2;
-    for (const cell of this.cells.values()) {
-      cell.age += dt;
-      // Grow toward maxRadius with easing — faster initially, slows near max
-      const growth = growthRate * boost * dt * Math.max(0.1, maxRadius - cell.radius);
-      cell.radius = Math.min(maxRadius, cell.radius + growth);
+    const gravDir = physicsMode === PHYSICS_FLOAT ? -1 : 1; // up vs down
+
+    for (let i = this.cells.length - 1; i >= 0; i--) {
+      const c = this.cells[i];
+      c.age += dt;
+
+      // Growth
+      const growth = growthRate * boost * dt * Math.max(0.1, maxRadius - c.radius);
+      c.radius = Math.min(maxRadius, c.radius + growth);
+
+      // Physics (skip for static mode)
+      if (physicsMode !== PHYSICS_STATIC) {
+        // Apply gravity
+        c.vy += gravity * gravDir * dt;
+
+        // Apply viscosity (drag)
+        const drag = Math.pow(1 - viscosity, dt * 60);
+        c.vx *= drag;
+        c.vy *= drag;
+
+        // Small random jitter for organic feel
+        c.vx += (Math.random() - 0.5) * 0.3 * dt;
+
+        // Move
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+      }
+
+      // Remove off-screen bubbles (with margin for radius)
+      const margin = maxRadius * 2;
+      if (c.y < -margin || c.y > fieldSize + margin ||
+          c.x < -margin || c.x > fieldSize + margin) {
+        this.cells[i] = this.cells[this.cells.length - 1];
+        this.cells.pop();
+      }
     }
-    return this.cells.size;
+
+    return this.cells.length;
   }
 
   /**
    * Pack active bubbles into a Float32Array for GPU upload.
    * Each bubble: [clipX, clipY, clipRadius, hue]
-   * Coordinates are in clip space (-1..1).
    */
   packInstances(canvasWidth: number, canvasHeight: number, cellSize: number): Float32Array {
-    const count = this.cells.size;
+    const count = this.cells.length;
     const data = new Float32Array(count * 4);
     let i = 0;
-    // Cell UV (0..1) from grid position, then to clip (-1..1)
     const invW = 2 / canvasWidth;
     const invH = 2 / canvasHeight;
-    for (const cell of this.cells.values()) {
-      // Cell center in pixels
-      const px = (cell.col + 0.5) * cellSize;
-      const py = (cell.row + 0.5) * cellSize;
-      // To clip space
+    for (const cell of this.cells) {
+      const px = cell.x * cellSize;
+      const py = cell.y * cellSize;
       data[i]     = px * invW - 1;
-      data[i + 1] = 1 - py * invH; // flip Y
-      // Radius in clip space (bubble radius in cells * cellSize → pixels → clip)
+      data[i + 1] = 1 - py * invH;
       data[i + 2] = cell.radius * cellSize * invW;
       data[i + 3] = cell.hue;
       i += 4;

@@ -5,6 +5,7 @@
   import { ControlBar } from "../../lib/ui";
   import { BubbleSimulation } from "./BubbleSimulation";
   import { settingsStore } from "./settingsStore";
+  import type { Settings } from "./settingsStore";
   import BubbleMapSettings from "./BubbleMapSettings.svelte";
 
   let sim: BubbleSimulation;
@@ -12,20 +13,19 @@
   let panelOpen = $state(false);
   let drawing = false;
 
+  const settingsKeys: (keyof Settings)[] = [
+    "growthRate", "maxRadius", "brushRadius",
+    "physicsMode", "gravity", "viscosity",
+    "thickness", "opacity", "colorHue", "colorSat", "colorVal", "useBaseColor",
+    "shininess", "ambient", "specStrength", "rimPower", "rimStrength",
+    "lightAngleX", "lightAngleY",
+  ];
+
   const loop = createAnimationLoop((dt) => {
     const s = settingsStore.getState();
-    sim.settings.growthRate = s.growthRate;
-    sim.settings.maxRadius = s.maxRadius;
-    sim.settings.threshold = s.threshold;
-    sim.settings.shininess = s.shininess;
-    sim.settings.ambient = s.ambient;
-    sim.settings.specStrength = s.specStrength;
-    sim.settings.rimPower = s.rimPower;
-    sim.settings.rimStrength = s.rimStrength;
-    sim.settings.brushRadius = s.brushRadius;
-    sim.settings.lightAngleX = s.lightAngleX;
-    sim.settings.lightAngleY = s.lightAngleY;
-
+    for (const k of settingsKeys) {
+      (sim.settings as unknown as Record<string, number>)[k] = s[k] as number;
+    }
     if (audio?.isActive) sim.setAudioLevel(audio.level);
     sim.update(dt);
   });
