@@ -11,6 +11,9 @@ export interface Settings {
   viscosity: number;
   // Appearance
   thickness: number;    // maps to density threshold
+  densityScale: number; // per-bubble contribution (lower = more stacking depth)
+  softness: number;     // 0=sharp bubbles, 1=soft clouds
+  depthScale: number;   // visual depth exaggeration
   opacity: number;
   colorHue: number;
   colorSat: number;
@@ -33,7 +36,10 @@ export const DEFAULTS: Settings = {
   physicsMode: 0,
   gravity: 15,
   viscosity: 0.3,
-  thickness: 0.12,
+  thickness: 0.08,
+  densityScale: 0.15,
+  softness: 0.5,
+  depthScale: 3.0,
   opacity: 1.0,
   colorHue: 0.55,
   colorSat: 0.7,

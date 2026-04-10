@@ -1,19 +1,20 @@
 precision mediump float;
 
-uniform sampler2D u_density;     // density FBO: R=density, G=density*hue, A=density
-uniform vec2 u_resolution;       // canvas size in pixels
-uniform float u_threshold;       // density cutoff for goo surface
-uniform float u_shininess;       // specular exponent
-uniform vec3 u_lightDir;         // normalized light direction
-uniform float u_ambient;         // ambient light level
-uniform float u_specStrength;    // specular intensity
-uniform float u_rimPower;        // rim lighting falloff
-uniform float u_rimStrength;     // rim lighting intensity
-uniform float u_opacity;         // global opacity multiplier
-uniform float u_baseHue;         // base color hue override
-uniform float u_baseSat;         // base color saturation override
-uniform float u_baseVal;         // base color value override
-uniform float u_useBaseColor;    // 0=per-stroke hue, 1=base color
+uniform sampler2D u_density;
+uniform vec2 u_resolution;
+uniform float u_threshold;
+uniform float u_shininess;
+uniform vec3 u_lightDir;
+uniform float u_ambient;
+uniform float u_specStrength;
+uniform float u_rimPower;
+uniform float u_rimStrength;
+uniform float u_opacity;
+uniform float u_baseHue;
+uniform float u_baseSat;
+uniform float u_baseVal;
+uniform float u_useBaseColor;
+uniform float u_depthScale;      // how much density above threshold maps to visual depth
 
 varying vec2 v_uv;
 
@@ -26,23 +27,19 @@ vec3 hsv2rgb(float h, float s, float v) {
 void main() {
   vec2 texel = 1.0 / u_resolution;
 
-  // Sample density at current pixel and neighbors for gradient
   float dc = texture2D(u_density, v_uv).r;
   float dl = texture2D(u_density, v_uv - vec2(texel.x, 0.0)).r;
   float dr = texture2D(u_density, v_uv + vec2(texel.x, 0.0)).r;
   float db = texture2D(u_density, v_uv - vec2(0.0, texel.y)).r;
   float dt = texture2D(u_density, v_uv + vec2(0.0, texel.y)).r;
 
-  // Extract hue from weighted average
   vec4 samp = texture2D(u_density, v_uv);
   float strokeHue = samp.r > 0.001 ? samp.g / samp.r : 0.5;
-  // Mix between per-stroke hue and base color
   float hue = mix(strokeHue, u_baseHue, u_useBaseColor);
   float sat = mix(0.7, u_baseSat, u_useBaseColor);
   float val = mix(0.9, u_baseVal, u_useBaseColor);
 
   if (dc < u_threshold) {
-    // Edge glow: soft falloff near the threshold
     float edgeDist = dc / u_threshold;
     float glow = smoothstep(0.0, 1.0, edgeDist) * 0.15;
     if (glow < 0.01) discard;
@@ -52,13 +49,23 @@ void main() {
     return;
   }
 
-  // Compute surface normal from density gradient
+  // Normalized depth: how far above threshold (0=surface, 1=max depth)
+  float depth = smoothstep(u_threshold, 1.0, dc);
+
+  // Compute normal — scale gradient strength by depthScale for more dramatic relief
   float dzdx = (dr - dl) * 0.5;
   float dzdy = (dt - db) * 0.5;
-  vec3 normal = normalize(vec3(-dzdx * 4.0, -dzdy * 4.0, 1.0));
+  float gradScale = 4.0 + depth * u_depthScale * 8.0;
+  vec3 normal = normalize(vec3(-dzdx * gradScale, -dzdy * gradScale, 1.0));
 
-  // Base color
-  vec3 baseColor = hsv2rgb(hue, sat, val);
+  // Color: surface is bright, deep interior is richer/darker (cloud/jello look)
+  vec3 surfaceColor = hsv2rgb(hue, sat, val);
+  vec3 deepColor = hsv2rgb(hue, min(sat + 0.2, 1.0), val * 0.4);
+  vec3 baseColor = mix(surfaceColor, deepColor, depth * 0.6);
+
+  // Subsurface scattering fake: light passes through thin areas
+  float subsurface = (1.0 - depth) * 0.3;
+  vec3 sssColor = hsv2rgb(hue, sat * 0.5, 1.0) * subsurface;
 
   // Phong lighting
   vec3 L = normalize(u_lightDir);
@@ -68,22 +75,16 @@ void main() {
   float diffuse = max(dot(normal, L), 0.0);
   float spec = pow(max(dot(R, V), 0.0), u_shininess);
 
-  // Rim lighting
+  // Rim lighting — stronger at edges for volume
   float rim = 1.0 - max(dot(normal, V), 0.0);
   rim = pow(rim, u_rimPower) * u_rimStrength;
 
-  // Height-based shading: thicker = darker/richer
-  float height = smoothstep(u_threshold, u_threshold + 1.5, dc);
-  vec3 deepColor = hsv2rgb(hue, min(sat + 0.15, 1.0), val * 0.55);
-  vec3 surfaceColor = mix(baseColor, deepColor, height * 0.4);
-
-  // Combine lighting
-  vec3 color = surfaceColor * (u_ambient + diffuse * 0.7)
+  vec3 color = baseColor * (u_ambient + diffuse * 0.7)
+             + sssColor
              + vec3(1.0) * spec * u_specStrength
-             + surfaceColor * rim;
+             + baseColor * rim;
 
-  // Soft edge anti-aliasing
-  float alpha = smoothstep(u_threshold, u_threshold + 0.05, dc) * u_opacity;
+  float alpha = smoothstep(u_threshold, u_threshold + 0.02, dc) * u_opacity;
 
   gl_FragColor = vec4(color, alpha);
 }

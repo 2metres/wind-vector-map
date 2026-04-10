@@ -9,6 +9,9 @@
   let gravity = $state(settingsStore.getState().gravity);
   let viscosity = $state(settingsStore.getState().viscosity);
   let thickness = $state(settingsStore.getState().thickness);
+  let densityScale = $state(settingsStore.getState().densityScale);
+  let softness = $state(settingsStore.getState().softness);
+  let depthScale = $state(settingsStore.getState().depthScale);
   let opacity = $state(settingsStore.getState().opacity);
   let colorHue = $state(settingsStore.getState().colorHue);
   let colorSat = $state(settingsStore.getState().colorSat);
@@ -29,6 +32,9 @@
   $effect(() => { settingsStore.getState().set("gravity", gravity); });
   $effect(() => { settingsStore.getState().set("viscosity", viscosity); });
   $effect(() => { settingsStore.getState().set("thickness", thickness); });
+  $effect(() => { settingsStore.getState().set("densityScale", densityScale); });
+  $effect(() => { settingsStore.getState().set("softness", softness); });
+  $effect(() => { settingsStore.getState().set("depthScale", depthScale); });
   $effect(() => { settingsStore.getState().set("opacity", opacity); });
   $effect(() => { settingsStore.getState().set("colorHue", colorHue); });
   $effect(() => { settingsStore.getState().set("colorSat", colorSat); });
@@ -51,6 +57,9 @@
     gravity = DEFAULTS.gravity;
     viscosity = DEFAULTS.viscosity;
     thickness = DEFAULTS.thickness;
+    densityScale = DEFAULTS.densityScale;
+    softness = DEFAULTS.softness;
+    depthScale = DEFAULTS.depthScale;
     opacity = DEFAULTS.opacity;
     colorHue = DEFAULTS.colorHue;
     colorSat = DEFAULTS.colorSat;
@@ -90,6 +99,9 @@
   <div class="section">
     <h3>Appearance</h3>
     <RangeSlider label="Thickness" bind:value={thickness} min={0.01} max={0.5} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Density" bind:value={densityScale} min={0.02} max={1.0} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Softness" bind:value={softness} min={0} max={1} step={0.01} formatValue={(v) => v.toFixed(2)} />
+    <RangeSlider label="Depth" bind:value={depthScale} min={0} max={10} step={0.1} formatValue={(v) => v.toFixed(1)} />
     <RangeSlider label="Opacity" bind:value={opacity} min={0.05} max={1} step={0.05} formatValue={(v) => v.toFixed(2)} />
     <SelectInput label="Color" bind:value={useBaseColor}>
       <option value={0}>Per-stroke</option>

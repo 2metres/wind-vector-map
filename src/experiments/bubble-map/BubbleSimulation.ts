@@ -23,6 +23,9 @@ export interface BubbleSettings {
   gravity: number;
   viscosity: number;
   thickness: number;
+  densityScale: number;
+  softness: number;
+  depthScale: number;
   opacity: number;
   colorHue: number;
   colorSat: number;
@@ -49,7 +52,10 @@ export class BubbleSimulation {
     physicsMode: 0,
     gravity: 15,
     viscosity: 0.3,
-    thickness: 0.12,
+    thickness: 0.08,
+    densityScale: 0.15,
+    softness: 0.5,
+    depthScale: 3.0,
     opacity: 1.0,
     colorHue: 0.55,
     colorSat: 0.7,
@@ -94,7 +100,7 @@ export class BubbleSimulation {
     const gl = this.gl;
 
     this.densityProgram = createProgram(gl, bubbleDensityVert, bubbleDensityFrag, {
-      uniforms: [],
+      uniforms: ["u_densityScale", "u_softness"],
       attributes: ["a_position", "a_instance"],
     });
 
@@ -104,6 +110,7 @@ export class BubbleSimulation {
         "u_lightDir", "u_ambient", "u_specStrength",
         "u_rimPower", "u_rimStrength",
         "u_opacity", "u_baseHue", "u_baseSat", "u_baseVal", "u_useBaseColor",
+        "u_depthScale",
       ],
       attributes: ["a_position"],
     });
@@ -211,6 +218,10 @@ export class BubbleSimulation {
     gl.blendFunc(gl.ONE, gl.ONE);
     gl.useProgram(this.densityProgram.program);
 
+    // Density uniforms
+    gl.uniform1f(this.densityProgram.uniforms["u_densityScale"]!, s.densityScale);
+    gl.uniform1f(this.densityProgram.uniforms["u_softness"]!, s.softness);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quadVBO);
     const aPos = this.densityProgram.attributes["a_position"];
     gl.enableVertexAttribArray(aPos);
@@ -257,6 +268,7 @@ export class BubbleSimulation {
     gl.uniform1f(u["u_baseSat"]!, s.colorSat);
     gl.uniform1f(u["u_baseVal"]!, s.colorVal);
     gl.uniform1f(u["u_useBaseColor"]!, s.useBaseColor);
+    gl.uniform1f(u["u_depthScale"]!, s.depthScale);
 
     const lx = Math.sin(s.lightAngleX) * Math.cos(s.lightAngleY);
     const ly = Math.sin(s.lightAngleY);
